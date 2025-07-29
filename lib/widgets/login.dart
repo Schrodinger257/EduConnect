@@ -39,7 +39,7 @@ class _LoginWidgetState extends ConsumerState<LoginWidget> {
     _formKey.currentState!.validate();
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-      await ref.read(authProvider.notifier).login(_email, _password);
+      await ref.read(authProvider.notifier).login(_email, _password, context);
     }
     if (ref.watch(authProvider.notifier).statue == 'success') {
       // Show success message

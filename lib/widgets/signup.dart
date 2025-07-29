@@ -57,7 +57,7 @@ class _SignupWidgetState extends ConsumerState<SignupWidget> {
         name: _name,
         roleCode: _defineRoleCode(_roleCode),
       );
-      await ref.read(authProvider.notifier).signup(user);
+      await ref.read(authProvider.notifier).signup(user, context);
     }
     if (ref.watch(authProvider.notifier).statue == 'success') {
       // Show success message

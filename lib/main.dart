@@ -10,7 +10,12 @@ void main() async {
   runApp(ProviderScope(child: MyApp()));
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerStatefulWidget {
+  @override
+  ConsumerState<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends ConsumerState<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -19,8 +24,16 @@ class MyApp extends StatelessWidget {
         primaryColor: const Color.fromARGB(255, 255, 114, 94),
         shadowColor: const Color.fromARGB(255, 69, 90, 100),
         cardColor: const Color.fromARGB(255, 255, 214, 209),
+        scaffoldBackgroundColor: const Color.fromARGB(255, 255, 255, 255),
       ),
       home: AuthScreen(),
+      darkTheme: ThemeData.dark().copyWith(
+        primaryColor: const Color.fromARGB(255, 255, 114, 94),
+        shadowColor: const Color.fromARGB(255, 69, 90, 100),
+        cardColor: const Color.fromARGB(255, 255, 214, 209),
+        scaffoldBackgroundColor: const Color.fromARGB(255, 30, 30, 30),
+      ),
+      themeMode: ThemeMode.system,
     );
   }
 }

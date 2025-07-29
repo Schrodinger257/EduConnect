@@ -1,10 +1,8 @@
-import 'dart:math';
-
 import 'package:educonnect/modules/user.dart';
+import 'package:educonnect/screens/main_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class RoleProvider extends StateNotifier {
@@ -62,7 +60,11 @@ class AuthProvider extends StateNotifier {
     }
   }
 
-  Future<void> login(String email, String password) async {
+  Future<void> login(
+    String email,
+    String password,
+    BuildContext context,
+  ) async {
     try {
       statue = '';
       error = '';
@@ -70,6 +72,9 @@ class AuthProvider extends StateNotifier {
           .signInWithEmailAndPassword(email: email, password: password);
       statue = 'success';
       error = '';
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (context) => MainScreen()));
 
       print('User logged in: ${userCredential.user?.uid}');
     } catch (e) {
@@ -81,7 +86,7 @@ class AuthProvider extends StateNotifier {
     }
   }
 
-  Future<void> signup(UserClass user) async {
+  Future<void> signup(UserClass user, BuildContext context) async {
     try {
       statue = '';
       error = '';
@@ -102,6 +107,9 @@ class AuthProvider extends StateNotifier {
             'roleCode': user.roleCode,
             'createdAt': FieldValue.serverTimestamp(),
           });
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (context) => MainScreen()));
       // Additional logic for user creation can be added here
       print('User signed up: ${userCredential.user?.uid}');
     } catch (e) {
