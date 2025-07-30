@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:educonnect/providers/auth_provider.dart';
 import 'package:educonnect/modules/user.dart';
+import 'package:educonnect/providers/screen_provider.dart';
 
 class SignupWidget extends ConsumerStatefulWidget {
   const SignupWidget({super.key});
@@ -58,24 +59,7 @@ class _SignupWidgetState extends ConsumerState<SignupWidget> {
         roleCode: _defineRoleCode(_roleCode),
       );
       await ref.read(authProvider.notifier).signup(user, context);
-    }
-    if (ref.watch(authProvider.notifier).statue == 'success') {
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Signup Successful!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    }
-    if (ref.watch(authProvider.notifier).error != '') {
-      // Show error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(ref.watch(authProvider.notifier).error),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+      ref.read(screenProvider.notifier).setScreen(2);
     }
   }
 

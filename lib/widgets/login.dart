@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:educonnect/providers/auth_provider.dart';
+import 'package:educonnect/providers/screen_provider.dart';
 
 class LoginWidget extends ConsumerStatefulWidget {
   const LoginWidget({super.key});
@@ -40,24 +41,7 @@ class _LoginWidgetState extends ConsumerState<LoginWidget> {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
       await ref.read(authProvider.notifier).login(_email, _password, context);
-    }
-    if (ref.watch(authProvider.notifier).statue == 'success') {
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Login Successful!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    }
-    if (ref.watch(authProvider.notifier).error != '') {
-      // Show error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(ref.watch(authProvider.notifier).error),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+      ref.read(screenProvider.notifier).setScreen(2);
     }
   }
 

@@ -11,9 +11,12 @@ class GoogleBottomBar extends ConsumerStatefulWidget {
 }
 
 class _GoogleBottomBarState extends ConsumerState<GoogleBottomBar> {
-  int _selectedIndex = 0;
   @override
   Widget build(BuildContext context) {
+    int _selectedIndex = ref
+        .watch(screenProvider.notifier)
+        .screens
+        .indexOf(ref.watch(screenProvider));
     return SalomonBottomBar(
       margin: const EdgeInsets.only(bottom: 20, top: 10),
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -35,27 +38,27 @@ List<SalomonBottomBarItem> _navBarItems(BuildContext context) {
   return [
     SalomonBottomBarItem(
       icon: const Icon(Icons.mic_none),
-      title: const Text("Announcements"),
+      title: const Text("Announcements", style: TextStyle(fontSize: 12)),
       selectedColor: Theme.of(context).primaryColor,
     ),
     SalomonBottomBarItem(
       icon: const Icon(Icons.library_books),
-      title: const Text("Courses"),
+      title: const Text("Courses", style: TextStyle(fontSize: 12)),
       selectedColor: Theme.of(context).primaryColor,
     ),
     SalomonBottomBarItem(
       icon: const Icon(Icons.feed),
-      title: const Text("Home Feed"),
+      title: const Text("Home Feed", style: TextStyle(fontSize: 12)),
       selectedColor: Theme.of(context).primaryColor,
     ),
     SalomonBottomBarItem(
       icon: const Icon(Icons.chat_rounded),
-      title: const Text("Chat"),
+      title: const Text("Chat", style: TextStyle(fontSize: 12)),
       selectedColor: Theme.of(context).primaryColor,
     ),
     SalomonBottomBarItem(
       icon: const Icon(Icons.person),
-      title: const Text("Profile"),
+      title: const Text("Profile", style: TextStyle(fontSize: 12)),
       selectedColor: Theme.of(context).primaryColor,
     ),
   ];

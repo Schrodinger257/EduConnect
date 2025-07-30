@@ -1,0 +1,331 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:educonnect/providers/auth_provider.dart';
+import 'package:flutter/material.dart';
+import 'dart:io';
+
+class ProfileProvider extends StateNotifier<Map<String, dynamic>> {
+  ProfileProvider() : super({});
+  final ImagePicker _picker = ImagePicker();
+  File? selectedImage;
+
+  // void updateProfile(Map<String, dynamic> profileData) {
+  //   state = profileData;
+  // }
+
+  void setProfileImage(BuildContext context, String userid) async {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: Icon(Icons.photo_library),
+                title: Text('Choose from Gallery'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final XFile? image = await _picker.pickImage(
+                    source: ImageSource.gallery,
+                    imageQuality: 80,
+                  );
+                  if (image != null) {
+                    selectedImage = File(image.path);
+                    FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(userid)
+                        .update({'profileImage': selectedImage!.path});
+                  }
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.camera_alt),
+                title: Text('Take a Photo'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final XFile? image = await _picker.pickImage(
+                    source: ImageSource.camera,
+                    imageQuality: 80,
+                  );
+                  if (image != null) {
+                    selectedImage = File(image.path);
+                    FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(userid)
+                        .update({'profileImage': selectedImage!.path});
+                  }
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void updateUserProfile(
+    String userId,
+    Map<String, dynamic> profileData,
+    BuildContext context,
+  ) {
+    Map<String, dynamic> data = profileData;
+
+    showModalBottomSheet(
+      isScrollControlled: true,
+      useSafeArea: true,
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          margin: EdgeInsets.symmetric(horizontal: 20),
+          padding: EdgeInsets.only(
+            top: 20,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 40,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.max,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Add your form fields here
+              Column(
+                children: [
+                  Text(
+                    'Update Profile',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                  ),
+                  SizedBox(height: 16),
+
+                  Form(
+                    child: Column(
+                      children: [
+                        TextFormField(
+                          initialValue: data['name'],
+                          decoration: InputDecoration(
+                            labelText: 'name',
+                            labelStyle: TextStyle(
+                              color: Theme.of(context).primaryColor,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderSide: BorderSide(
+                                color: Theme.of(context).cardColor,
+                                width: 2,
+                              ),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderSide: BorderSide(
+                                color: Theme.of(context).primaryColor,
+                                width: 2,
+                              ),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          onChanged: (value) {
+                            data['name'] = value;
+                          },
+                        ),
+                        SizedBox(height: 20),
+                        TextFormField(
+                          initialValue: data['phone'],
+                          decoration: InputDecoration(
+                            labelText: 'phone',
+                            labelStyle: TextStyle(
+                              color: Theme.of(context).primaryColor,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderSide: BorderSide(
+                                color: Theme.of(context).cardColor,
+                                width: 2,
+                              ),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderSide: BorderSide(
+                                color: Theme.of(context).primaryColor,
+                                width: 2,
+                              ),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          onChanged: (value) {
+                            data['phone'] = value;
+                          },
+                        ),
+                        SizedBox(height: 20),
+                        if (data['roleCode'] == 'instructor')
+                          TextFormField(
+                            initialValue: data['fieldofexpertise'],
+                            decoration: InputDecoration(
+                              labelText: 'Field of Expertise',
+                              labelStyle: TextStyle(
+                                color: Theme.of(context).primaryColor,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: Theme.of(context).cardColor,
+                                  width: 2,
+                                ),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: Theme.of(context).primaryColor,
+                                  width: 2,
+                                ),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            onChanged: (value) {
+                              data['fieldofexpertise'] = value;
+                            },
+                          ),
+                        SizedBox(height: 20),
+
+                        if (data['roleCode'] == 'student')
+                          TextFormField(
+                            initialValue: data['department'],
+                            decoration: InputDecoration(
+                              labelText: 'Department',
+                              labelStyle: TextStyle(
+                                color: Theme.of(context).primaryColor,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: Theme.of(context).cardColor,
+                                  width: 2,
+                                ),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: Theme.of(context).primaryColor,
+                                  width: 2,
+                                ),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            onChanged: (value) {
+                              data['department'] = value;
+                            },
+                          ),
+                        SizedBox(height: 20),
+
+                        if (data['roleCode'] == 'student')
+                          DropdownButtonFormField(
+                            value: data['grade'],
+                            items:
+                                [
+                                  '1st Year',
+                                  '2nd Year',
+                                  '3rd Year',
+                                  '4th Year',
+                                  'Not Assigned Yet',
+                                ].map((String grade) {
+                                  return DropdownMenuItem(
+                                    value: grade,
+                                    child: Text(grade),
+                                  );
+                                }).toList(),
+                            decoration: InputDecoration(
+                              labelText: 'Grade',
+                              labelStyle: TextStyle(
+                                color: Theme.of(context).primaryColor,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: Theme.of(context).cardColor,
+                                  width: 2,
+                                ),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: Theme.of(context).primaryColor,
+                                  width: 2,
+                                ),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            onChanged: (value) {
+                              data['grade'] = value;
+                            },
+                          ),
+                        // Add more fields as needed
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(
+                width: double.infinity,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).cardColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      onPressed: () {
+                        FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(userId)
+                            .update(data)
+                            .then((_) {
+                              Navigator.pop(context);
+                            });
+                      },
+                      child: Text(
+                        'Save Changes',
+                        style: TextStyle(
+                          color: Theme.of(context).primaryColor,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(
+                          color: Theme.of(context).primaryColor,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void clearProfile() {
+    state = {};
+  }
+}
+
+final profileProvider =
+    StateNotifierProvider<ProfileProvider, Map<String, dynamic>>((ref) {
+      return ProfileProvider();
+    });

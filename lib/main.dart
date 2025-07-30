@@ -29,9 +29,9 @@ class _MyAppState extends ConsumerState<MyApp> {
       home: AuthScreen(),
       darkTheme: ThemeData.dark().copyWith(
         primaryColor: const Color.fromARGB(255, 255, 114, 94),
-        shadowColor: const Color.fromARGB(255, 69, 90, 100),
+        shadowColor: const Color.fromARGB(255, 255, 252, 248),
         cardColor: const Color.fromARGB(255, 255, 214, 209),
-        scaffoldBackgroundColor: const Color.fromARGB(255, 30, 30, 30),
+        scaffoldBackgroundColor: const Color.fromARGB(255, 34, 44, 49),
       ),
       themeMode: ThemeMode.system,
     );

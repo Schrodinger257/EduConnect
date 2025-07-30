@@ -1,4 +1,5 @@
 import 'package:educonnect/modules/user.dart';
+import 'package:educonnect/screens/auth_screen.dart';
 import 'package:educonnect/screens/main_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
@@ -40,6 +41,10 @@ class AuthScreenProvider extends StateNotifier {
   void toggleAuthState() {
     state = !state;
   }
+
+  void setAuthState(bool value) {
+    state = value;
+  }
 }
 
 final authScreenProvider = StateNotifierProvider((ref) => AuthScreenProvider());
@@ -50,9 +55,19 @@ class AuthProvider extends StateNotifier {
   String error = '';
   String statue = '';
 
-  Future<void> logout() async {
+  Future<void> logout(BuildContext context) async {
     try {
       await FirebaseAuth.instance.signOut();
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (context) => AuthScreen()));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Logged out successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
       print('User logged out successfully');
     } catch (e) {
       print('Error logging out: $e');
@@ -66,21 +81,41 @@ class AuthProvider extends StateNotifier {
     BuildContext context,
   ) async {
     try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Logging in...'),
+          backgroundColor: Colors.lightBlueAccent,
+        ),
+      );
+
       statue = '';
       error = '';
       UserCredential userCredential = await FirebaseAuth.instance
           .signInWithEmailAndPassword(email: email, password: password);
       statue = 'success';
       error = '';
+      state = userCredential.user!.uid;
       Navigator.of(
         context,
       ).pushReplacement(MaterialPageRoute(builder: (context) => MainScreen()));
 
+      ScaffoldMessenger.of(context).clearSnackBars();
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Login Successful!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
       print('User logged in: ${userCredential.user?.uid}');
     } catch (e) {
+      ScaffoldMessenger.of(context).clearSnackBars();
       statue = 'error';
       error = e.toString();
-
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error), backgroundColor: Colors.redAccent),
+      );
       print('Error logging in: $e');
       throw e; // Handle the error appropriately
     }
@@ -90,6 +125,12 @@ class AuthProvider extends StateNotifier {
     try {
       statue = '';
       error = '';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Signing up...'),
+          backgroundColor: Colors.lightBlueAccent,
+        ),
+      );
 
       UserCredential userCredential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(
@@ -105,16 +146,35 @@ class AuthProvider extends StateNotifier {
             'email': user.email,
             'name': user.name,
             'roleCode': user.roleCode,
+            'fieldofexpertise': 'Not Assigned Yet',
+            'profileImage': null,
+            'phone': 'Not Assigned Yet',
+            'department': 'Not Assigned Yet',
+            'grade': 'Not Assigned Yet',
             'createdAt': FieldValue.serverTimestamp(),
           });
+      state = userCredential.user!.uid;
       Navigator.of(
         context,
       ).pushReplacement(MaterialPageRoute(builder: (context) => MainScreen()));
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Signup Successful!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
       // Additional logic for user creation can be added here
       print('User signed up: ${userCredential.user?.uid}');
     } catch (e) {
+      ScaffoldMessenger.of(context).clearSnackBars();
       statue = 'error';
       error = e.toString();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error), backgroundColor: Colors.redAccent),
+      );
+
       print('Error signing up: $e');
       throw e; // Handle the error appropriately
     }
