@@ -54,6 +54,7 @@ class AuthProvider extends StateNotifier {
 
   String error = '';
   String statue = '';
+  Map<String, dynamic> userData = {};
 
   Future<void> logout(BuildContext context) async {
     try {
@@ -95,6 +96,11 @@ class AuthProvider extends StateNotifier {
       statue = 'success';
       error = '';
       state = userCredential.user!.uid;
+      userData = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .get()
+          .then((doc) => doc.data() as Map<String, dynamic>);
       Navigator.of(
         context,
       ).pushReplacement(MaterialPageRoute(builder: (context) => MainScreen()));
@@ -150,10 +156,18 @@ class AuthProvider extends StateNotifier {
             'profileImage': null,
             'phone': 'Not Assigned Yet',
             'department': 'Not Assigned Yet',
-            'grade': 'Not Assigned Yet',
+            'grade': 'None',
             'createdAt': FieldValue.serverTimestamp(),
+            'Bookmarks': [],
+            'likedPosts': [],
           });
       state = userCredential.user!.uid;
+      userData = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .get()
+          .then((doc) => doc.data() as Map<String, dynamic>);
+
       Navigator.of(
         context,
       ).pushReplacement(MaterialPageRoute(builder: (context) => MainScreen()));
@@ -168,6 +182,7 @@ class AuthProvider extends StateNotifier {
       // Additional logic for user creation can be added here
       print('User signed up: ${userCredential.user?.uid}');
     } catch (e) {
+      FirebaseAuth.instance.currentUser!.delete();
       ScaffoldMessenger.of(context).clearSnackBars();
       statue = 'error';
       error = e.toString();

@@ -11,6 +11,7 @@ class ProfileProvider extends StateNotifier<Map<String, dynamic>> {
   ProfileProvider() : super({});
   final ImagePicker _picker = ImagePicker();
   File? selectedImage;
+  Map<String, dynamic> user = {};
 
   // void updateProfile(Map<String, dynamic> profileData) {
   //   state = profileData;
@@ -72,6 +73,7 @@ class ProfileProvider extends StateNotifier<Map<String, dynamic>> {
     BuildContext context,
   ) {
     Map<String, dynamic> data = profileData;
+    final _formKey = GlobalKey<FormState>();
 
     showModalBottomSheet(
       isScrollControlled: true,
@@ -102,6 +104,7 @@ class ProfileProvider extends StateNotifier<Map<String, dynamic>> {
                   SizedBox(height: 16),
 
                   Form(
+                    key: _formKey,
                     child: Column(
                       children: [
                         TextFormField(
@@ -229,7 +232,7 @@ class ProfileProvider extends StateNotifier<Map<String, dynamic>> {
                                   '2nd Year',
                                   '3rd Year',
                                   '4th Year',
-                                  'Not Assigned Yet',
+                                  'None',
                                 ].map((String grade) {
                                   return DropdownMenuItem(
                                     value: grade,
@@ -300,6 +303,7 @@ class ProfileProvider extends StateNotifier<Map<String, dynamic>> {
                     TextButton(
                       onPressed: () {
                         Navigator.pop(context);
+                        _formKey.currentState?.reset();
                       },
                       child: Text(
                         'Cancel',

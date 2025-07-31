@@ -1,12 +1,16 @@
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:educonnect/providers/post_provider.dart';
+import 'package:educonnect/screens/bookmarks_screen.dart';
+import 'package:educonnect/screens/my_posts_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:educonnect/providers/auth_provider.dart';
 import 'package:educonnect/providers/profile_provider.dart';
 import 'package:educonnect/providers/screen_provider.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   @override
@@ -85,7 +89,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buttonCard(BuildContext context, String title, IconData icon) {
+  Widget _buttonCard(
+    BuildContext context, {
+    required String title,
+    required IconData icon,
+    required Function onPressed,
+  }) {
     return Container(
       margin: EdgeInsets.only(bottom: 10),
       child: ElevatedButton(
@@ -97,7 +106,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
           padding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
         ),
-        onPressed: () {},
+        onPressed: () {
+          onPressed();
+        },
         child: SizedBox(
           height: 50,
           child: Row(
@@ -146,23 +157,39 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       builder: (ctx, snapshot) {
         // 1. First, handle the loading state.
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return Center(
+            child: SvgPicture.asset(
+              'assets/vectors/Loading-pana.svg',
+              height: 300,
+            ),
+          );
         }
 
         // 2. Then, handle errors.
         if (snapshot.hasError) {
-          return Center(child: Text('Something went wrong: ${snapshot.error}'));
+          return Center(
+            child: SvgPicture.asset(
+              'assets/vectors/400-Error-Bad-Request-pana.svg',
+              height: 300,
+            ),
+          );
         }
 
         // 3. After checks, handle the case where there's no data.
         if (!snapshot.hasData || !snapshot.data!.exists) {
           print('User not found');
-          return const Center(child: Text('User not found'));
+          return Center(
+            child: SvgPicture.asset(
+              'assets/vectors/404-Error-Page-not-Found-with-people-connecting-a-plug-pana.svg',
+              height: 300,
+            ),
+          );
         }
 
         // 4. Now it's safe to access the data.
         final userData = snapshot.data!.data() as Map<String, dynamic>;
-        user = userData; // Assign to the state variable
+        ref.read(profileProvider.notifier).user =
+            userData; // Assign to the state variable
 
         print(userData);
         return Scaffold(
@@ -225,7 +252,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 onPressed: () {
                                   ref
                                       .read(profileProvider.notifier)
-                                      .updateUserProfile(userID, user, context);
+                                      .updateUserProfile(
+                                        userID,
+                                        userData,
+                                        context,
+                                      );
                                 },
                                 icon: Icon(
                                   Icons.edit,
@@ -259,60 +290,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                       ),
                       SizedBox(height: 10),
-                      // Row(
-                      //   mainAxisAlignment: MainAxisAlignment.center,
-                      //   children: [
-                      //     TextButton(
-                      //       style: TextButton.styleFrom(
-                      //         elevation: 0,
-                      //         shape: RoundedRectangleBorder(
-                      //           borderRadius: BorderRadius.circular(10),
-                      //         ),
-                      //         side: BorderSide(
-                      //           color: Theme.of(context).primaryColor,
-                      //           width: 2,
-                      //         ),
-                      //       ),
-                      //       onPressed: () {
-                      //         ref
-                      //             .read(profileProvider.notifier)
-                      //             .updateUserProfile(userID, user, context);
-                      //       },
-                      //       child: Container(
-                      //         width: width * 0.3,
-                      //         alignment: Alignment.center,
-                      //         child: Text(
-                      //           'Edit Profile',
-                      //           style: TextStyle(
-                      //             color: Theme.of(context).primaryColor,
-                      //           ),
-                      //         ),
-                      //       ),
-                      //     ),
-                      //     SizedBox(width: 20),
-                      //     ElevatedButton(
-                      //       style: ElevatedButton.styleFrom(
-                      //         elevation: 0,
-                      //         backgroundColor: Theme.of(context).cardColor,
-                      //         shape: RoundedRectangleBorder(
-                      //           borderRadius: BorderRadius.circular(10),
-                      //         ),
-                      //       ),
-                      //       onPressed: () {},
-                      //       child: Container(
-                      //         width: width * 0.3,
-                      //         alignment: Alignment.center,
-                      //         child: Text(
-                      //           'Message',
-                      //           style: TextStyle(
-                      //             color: Theme.of(context).primaryColor,
-                      //           ),
-                      //         ),
-                      //       ),
-                      //     ),
-                      //   ],
-                      // ),
-                      // SizedBox(height: 10),
                       _decorLine(context),
                       SizedBox(height: 10),
                       _infoCard(
@@ -333,21 +310,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         title: 'Email',
                         value: userData['email'],
                       ),
-                      if (user['roleCode'] == 'student')
+                      if (userData['roleCode'] == 'student')
                         _infoCard(
                           context,
                           width,
                           title: 'Grade',
                           value: userData['grade'],
                         ),
-                      if (user['roleCode'] == 'student')
+                      if (userData['roleCode'] == 'student')
                         _infoCard(
                           context,
                           width,
                           title: 'Department',
                           value: userData['department'],
                         ),
-                      if (user['roleCode'] == 'instructor')
+                      if (userData['roleCode'] == 'instructor')
                         _infoCard(
                           context,
                           width,
@@ -356,20 +333,52 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                       _decorLine(context),
                       SizedBox(height: 10),
-                      _buttonCard(context, 'Bookmarked Posts', Icons.bookmark),
+                      _buttonCard(
+                        context,
+                        title: 'Bookmarked Posts',
+                        icon: Icons.bookmark,
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (ctx) => BookmarksScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buttonCard(
+                        context,
+                        title: 'My Posts',
+                        icon: Icons.article,
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (ctx) => MyPostsScreen(),
+                            ),
+                          );
+                        },
+                      ),
                       if (userData['roleCode'] == 'student')
-                        _buttonCard(context, 'My Posts', Icons.article),
-                      if (userData['roleCode'] == 'student')
-                        _buttonCard(context, 'Registered Courses', Icons.book),
+                        _buttonCard(
+                          context,
+                          title: 'Registered Courses',
+                          icon: Icons.book,
+                          onPressed: () {},
+                        ),
                       if (userData['roleCode'] == 'instructor' ||
                           userData['roleCode'] == 'admin')
                         _buttonCard(
                           context,
-                          'Announcements',
-                          Icons.notifications,
+                          title: 'Announcements',
+                          icon: Icons.notifications,
+                          onPressed: () {},
                         ),
                       if (userData['roleCode'] == 'instructor')
-                        _buttonCard(context, 'Course Materials', Icons.folder),
+                        _buttonCard(
+                          context,
+                          title: 'Course Materials',
+                          icon: Icons.folder,
+                          onPressed: () {},
+                        ),
                       SizedBox(height: 100),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
