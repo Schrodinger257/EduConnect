@@ -1,6 +1,5 @@
 <svg width="957" height="636" viewBox="0 0 957 636" fill="none" xmlns="http://www.w3.org/2000/svg">
-<g clip-path="url(#clip0_4_75)">
-<rect width="957" height="636" fill="white"/>
+<g clip-path="url(#clip0_4_58)">
 <rect width="100" height="100" rx="50" fill="#F2F2F2"/>
 <rect x="123" width="600" height="43" rx="6" fill="#F2F2F2"/>
 <rect x="123" y="50" width="120" height="30" rx="6" fill="#F2F2F2"/>
@@ -16,8 +15,9 @@
 <rect x="515" y="566" width="70" height="70" rx="6" fill="#F2F2F2"/>
 <rect x="887" y="2" width="70" height="70" rx="6" fill="#F2F2F2"/>
 </g>
+<rect x="0.5" y="0.5" width="956" height="635" stroke="black"/>
 <defs>
-<clipPath id="clip0_4_75">
+<clipPath id="clip0_4_58">
 <rect width="957" height="636" fill="white"/>
 </clipPath>
 </defs>

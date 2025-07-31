@@ -2,31 +2,31 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:educonnect/providers/auth_provider.dart';
-import 'package:educonnect/providers/post_provider.dart';
+import 'package:educonnect/providers/announce_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_image_viewer/easy_image_viewer.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-class PostWidget extends ConsumerStatefulWidget {
-  PostWidget({
+class AnnouncementWidget extends ConsumerStatefulWidget {
+  AnnouncementWidget({
     super.key,
     required this.post,
     required this.userId,
     required this.postID,
-    this.isMyPostScreen = false,
+    this.isMyAnnouncementScreen = false,
   });
 
   final Map<String, dynamic> post;
   final String userId;
   final String postID;
-  final bool isMyPostScreen;
+  final bool isMyAnnouncementScreen;
 
   @override
-  ConsumerState<PostWidget> createState() => _PostWidgetState();
+  ConsumerState<AnnouncementWidget> createState() => _AnnouncementWidgetState();
 }
 
-class _PostWidgetState extends ConsumerState<PostWidget> {
+class _AnnouncementWidgetState extends ConsumerState<AnnouncementWidget> {
   Widget _tag(BuildContext context, String tag) {
     return Container(
       margin: EdgeInsets.only(right: 5, bottom: 5),
@@ -45,18 +45,9 @@ class _PostWidgetState extends ConsumerState<PostWidget> {
     );
   }
 
-  bool isLiked = false;
-
-  void _toggleLike() {
-    setState(() {
-      isLiked = !isLiked;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     Color likeColor = Theme.of(context).primaryColor;
-    Color bookmarkColor = Theme.of(context).primaryColor;
     final Map<String, dynamic> userData = {};
     Map<String, dynamic> mainUser = {};
 
@@ -94,9 +85,12 @@ class _PostWidgetState extends ConsumerState<PostWidget> {
         userData.addAll(snapShot.data!.data() as Map<String, dynamic>);
         print(mainUser);
 
-        return Container(
+        return Card(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          elevation: 0,
           key: ValueKey(widget.postID),
-          width: double.infinity,
           child: Padding(
             padding: const EdgeInsets.all(10),
             child: Column(
@@ -140,31 +134,31 @@ class _PostWidgetState extends ConsumerState<PostWidget> {
                             itemBuilder: (context) {
                               return [
                                 PopupMenuItem(
-                                  value: 'Bookmark',
-                                  child: Text('Toggle Bookmark'),
+                                  value: 'announce',
+                                  child: Text('Toggle Announcement'),
                                 ),
-                                if (widget.isMyPostScreen)
+                                if (widget.isMyAnnouncementScreen)
                                   PopupMenuItem(
                                     value: 'delete',
-                                    child: Text('Delete Post'),
+                                    child: Text('Delete Announcement'),
                                   ),
                               ];
                             },
                             onSelected: (value) {
-                              if (value == 'Bookmark') {
-                                // Handle Bookmark post
+                              if (value == 'announce') {
+                                // Handle announce post
                                 ref
-                                    .read(postProvider.notifier)
-                                    .toggleBookmark(
-                                      ref.read(authProvider) as String,
+                                    .read(announceProvider.notifier)
+                                    .toggleAnnouncement(
+                                      widget.userId,
                                       widget.postID,
                                       context,
                                     );
                               } else if (value == 'delete') {
                                 // Handle delete post
                                 ref
-                                    .read(postProvider.notifier)
-                                    .deletePost(context, widget.postID);
+                                    .read(announceProvider.notifier)
+                                    .deleteAnnouncement(context, widget.postID);
                               }
                             },
                           ),
@@ -205,50 +199,6 @@ class _PostWidgetState extends ConsumerState<PostWidget> {
                       fit: BoxFit.cover,
                     ),
                   ),
-                SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      TextButton.icon(
-                        onPressed: () {
-                          _toggleLike();
-                        },
-                        label: Text(
-                          'Like',
-                          style: TextStyle(
-                            color: isLiked
-                                ? likeColor
-                                : Theme.of(context).shadowColor,
-                          ),
-                        ),
-                        icon: Icon(
-                          Icons.thumb_up,
-                          color: isLiked
-                              ? likeColor
-                              : Theme.of(context).shadowColor,
-                        ),
-                      ),
-
-                      TextButton.icon(
-                        onPressed: () {
-                          _toggleLike();
-                        },
-                        label: Text(
-                          'Comments',
-                          style: TextStyle(
-                            color: Theme.of(context).shadowColor,
-                          ),
-                        ),
-                        icon: Icon(
-                          Icons.comment,
-                          color: Theme.of(context).shadowColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
                 SizedBox(height: 20),
               ],
             ),

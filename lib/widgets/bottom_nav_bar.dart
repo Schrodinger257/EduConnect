@@ -37,7 +37,7 @@ class _GoogleBottomBarState extends ConsumerState<GoogleBottomBar> {
 List<SalomonBottomBarItem> _navBarItems(BuildContext context) {
   return [
     SalomonBottomBarItem(
-      icon: const Icon(Icons.mic_none),
+      icon: const Icon(Icons.notifications),
       title: const Text("Announcements", style: TextStyle(fontSize: 12)),
       selectedColor: Theme.of(context).primaryColor,
     ),

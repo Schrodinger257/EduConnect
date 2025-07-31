@@ -4,11 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
-class PostProvider extends StateNotifier {
-  PostProvider() : super([]);
+class AnnounceProvider extends StateNotifier {
+  AnnounceProvider() : super([]);
   Map<String, dynamic> mainUser = {};
 
-  Future<void> toggleBookmark(
+  Future<void> toggleAnnouncement(
     String userId,
     String postId,
     BuildContext context,
@@ -19,99 +19,90 @@ class PostProvider extends StateNotifier {
     try {
       final doc = await userDocRef.get();
       if (doc.exists) {
-        final List<dynamic> bookmarks = doc.data()?['Bookmarks'] ?? [];
-        if (bookmarks.contains(postId)) {
-          // If it's already bookmarked, remove it.
+        final List<dynamic> announcements = doc.data()?['Announcements'] ?? [];
+        if (announcements.contains(postId)) {
+          // If it's already announced, remove it.
           await userDocRef.update({
-            'Bookmarks': FieldValue.arrayRemove([postId]),
+            'Announcements': FieldValue.arrayRemove([postId]),
           });
           ScaffoldMessenger.of(context).clearSnackBars();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [Text('Post removed from bookmarks')],
+                children: [
+                  Text('Post removed from announcements'),
+                  TextButton(
+                    onPressed: () {
+                      // Handle undo action
+                      ScaffoldMessenger.of(context).clearSnackBars();
+
+                      userDocRef.update({
+                        'Announcements': FieldValue.arrayUnion([postId]),
+                      });
+                    },
+                    child: Text(
+                      'Undo',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               backgroundColor: Colors.redAccent,
             ),
           );
         } else {
-          // If it's not bookmarked, add it.
+          // If it's not announced, add it.
           await userDocRef.update({
-            'Bookmarks': FieldValue.arrayUnion([postId]),
+            'Announcements': FieldValue.arrayUnion([postId]),
           });
           ScaffoldMessenger.of(context).clearSnackBars();
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Post added to bookmarks'),
+              content: Text('Post added to announcements'),
               backgroundColor: Theme.of(context).primaryColor,
             ),
           );
         }
       }
     } catch (e) {
-      print("Error toggling bookmark: $e");
+      print("Error toggling announcement: $e");
       // Optionally, re-throw the error or show a snackbar
     }
   }
 
   // NEW: A clear function to handle only liking.
-  Future<void> toggleLike(String userId, String postId) async {
-    final userDocRef = FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId);
-    final postDocRef = FirebaseFirestore.instance
-        .collection('posts')
-        .doc(postId);
-    try {
-      final userDoc = await userDocRef.get();
-      if (userDoc.exists) {
-        final List<dynamic> likedPosts = userDoc.data()?['likedPosts'] ?? [];
-        if (likedPosts.contains(postId)) {
-          // If already liked, unlike it.
-          await userDocRef.update({
-            'likedPosts': FieldValue.arrayRemove([postId]),
-          });
-          // Also decrement the like count on the post document.
-          await postDocRef.update({'likes': FieldValue.increment(-1)});
-        } else {
-          // If not liked, like it.
-          await userDocRef.update({
-            'likedPosts': FieldValue.arrayUnion([postId]),
-          });
-          // Also increment the like count on the post document.
-          await postDocRef.update({'likes': FieldValue.increment(1)});
-        }
-      }
-    } catch (e) {
-      print("Error toggling like: $e");
-    }
-  }
 
-  void deletePost(BuildContext context, String postId) async {
+  void deleteAnnouncement(BuildContext context, String postId) async {
     try {
-      await FirebaseFirestore.instance.collection('posts').doc(postId).delete();
+      await FirebaseFirestore.instance
+          .collection('announcements')
+          .doc(postId)
+          .delete();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Post deleted successfully'),
+          content: Text('Announcement deleted successfully'),
           backgroundColor: Colors.green,
         ),
       );
     } catch (error) {
-      print('Error deleting post: $error');
+      print('Error deleting announcement: $error');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Could not delete post, error: $error'),
+          content: Text('Could not delete announcement, error: $error'),
           backgroundColor: Colors.redAccent,
         ),
       );
     }
   }
 
-  Stream<List<Map<String, dynamic>>> getPosts() {
+  Stream<List<Map<String, dynamic>>> getAnnouncements() {
     return FirebaseFirestore.instance
-        .collection('posts')
+        .collection('announcements')
         .orderBy('timestamp', descending: true)
         .snapshots()
         .map((snapShot) {
@@ -121,9 +112,9 @@ class PostProvider extends StateNotifier {
         });
   }
 
-  Stream<List<Map<String, dynamic>>> getOwnPosts(String userId) {
+  Stream<List<Map<String, dynamic>>> getOwnAnnouncements(String userId) {
     return FirebaseFirestore.instance
-        .collection('posts')
+        .collection('announcements')
         .where('userid', isEqualTo: userId)
         .orderBy('timestamp', descending: true)
         .snapshots()
@@ -134,63 +125,7 @@ class PostProvider extends StateNotifier {
         });
   }
 
-  Stream<List<Map<String, dynamic>>> getBookmarkedPosts(String userId) {
-    // First, get the stream of the user's document to react to bookmark changes.
-    return FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .snapshots()
-        .asyncMap((userDoc) async {
-          if (!userDoc.exists || userDoc.data() == null) {
-            return []; // Return an empty list if the user doesn't exist
-          }
-
-          // Get the list of bookmarked post IDs from the user's document.
-          final List<String> bookmarkIds = List<String>.from(
-            userDoc.data()!['Bookmarks'] ?? [],
-          );
-
-          if (bookmarkIds.isEmpty) {
-            return []; // Return an empty list if there are no bookmarks.
-          }
-
-          // Fetch all posts where the document ID is in our list of bookmark IDs.
-          final postsSnapshot = await FirebaseFirestore.instance
-              .collection('posts')
-              .where(FieldPath.documentId, whereIn: bookmarkIds)
-              .get();
-
-          // Map the documents to a list of post data.
-          final posts = postsSnapshot.docs.map((doc) {
-            return {...doc.data(), 'id': doc.id};
-          }).toList();
-
-          // Because a 'whereIn' query can't be combined with 'orderBy' on a different field,
-          // we sort the posts by timestamp here in the app.
-          posts.sort((a, b) {
-            final Timestamp timeA = a['timestamp'] ?? Timestamp.now();
-            final Timestamp timeB = b['timestamp'] ?? Timestamp.now();
-            return timeB.compareTo(timeA); // Sort descending (newest first)
-          });
-
-          return posts;
-        });
-  }
-
   Set<String> tags = {};
-
-  Set<String> _addTags({required Map<String, dynamic> user}) {
-    tags.add(user['roleCode']);
-    if (user['roleCode'] == 'student' && user['grade'] != 'None') {
-      tags.add(user['grade']);
-    }
-    if (user['roleCode'] == 'instructor' &&
-        user['fieldofexpertise'] != 'Not Assigned Yet') {
-      tags.add(user['fieldofexpertise']);
-    }
-
-    return tags;
-  }
 
   createPost(
     BuildContext context, {
@@ -212,12 +147,11 @@ class PostProvider extends StateNotifier {
       }
       if (postContent.isNotEmpty || selectedImage != null) {
         await FirebaseFirestore.instance
-            .collection('posts')
+            .collection('announcements')
             .add({
               'content': postContent,
               'image':
                   selectedImage?.path ?? null, // Placeholder for image path
-              'likes': [],
               'userid': userId,
               'tags': tags.toList(),
               'timestamp': FieldValue.serverTimestamp(),
@@ -249,7 +183,7 @@ class PostProvider extends StateNotifier {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    Text('Create Post'),
+                    Text('Share Announcement'),
                     Divider(),
                     Container(
                       width: double.infinity,
@@ -300,7 +234,7 @@ class PostProvider extends StateNotifier {
                             child: TextFormField(
                               maxLines: null,
                               decoration: InputDecoration(
-                                hintText: 'What\'s on your mind?',
+                                hintText: 'What do you want to announce?',
                                 labelStyle: TextStyle(
                                   color: Theme.of(context).shadowColor,
                                   fontWeight: FontWeight.bold,
@@ -405,7 +339,6 @@ class PostProvider extends StateNotifier {
                                         _formKey.currentState!.save();
                                         tags.clear();
                                         print(tagItems);
-                                        _addTags(user: user);
                                         setState(() {
                                           // Update the state to reflect the new tags
                                           tags.addAll(tagItems);
@@ -533,7 +466,6 @@ class PostProvider extends StateNotifier {
                                   ),
                                   onPressed: () {
                                     // Handle post creation
-                                    _addTags(user: user);
                                     _submitForm();
                                   },
                                   child: Text('Create Post'),
@@ -555,6 +487,6 @@ class PostProvider extends StateNotifier {
   }
 }
 
-final postProvider = StateNotifierProvider((ref) {
-  return PostProvider();
+final announceProvider = StateNotifierProvider((ref) {
+  return AnnounceProvider();
 });

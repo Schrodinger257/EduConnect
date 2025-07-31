@@ -2,7 +2,9 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:educonnect/providers/post_provider.dart';
+import 'package:educonnect/screens/Announcement_screen.dart';
 import 'package:educonnect/screens/bookmarks_screen.dart';
+import 'package:educonnect/screens/my_announcement_screen.dart';
 import 'package:educonnect/screens/my_posts_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -370,7 +372,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           context,
                           title: 'Announcements',
                           icon: Icons.notifications,
-                          onPressed: () {},
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (ctx) => MyAnnouncementScreen(),
+                              ),
+                            );
+                          },
                         ),
                       if (userData['roleCode'] == 'instructor')
                         _buttonCard(
