@@ -11,9 +11,54 @@ class MyPostsScreen extends ConsumerStatefulWidget {
 }
 
 class _MyPostsScreenState extends ConsumerState<MyPostsScreen> {
+  final _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // It's now safe to use ref here.
+      // Also, check if the posts list inside the state is empty.
+      if (ref.read(ownPostProvider).posts.isEmpty) {
+        ref
+            .read(ownPostProvider.notifier)
+            .getOwnPosts(ref.read(authProvider) as String);
+      }
+    });
+
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    final postState = ref.watch(ownPostProvider);
+    final postNotifier = ref.watch(ownPostProvider.notifier);
+    final userId = ref.watch(authProvider);
+    // 3. The core logic for fetching more posts
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent *
+                0.9 && // Trigger slightly before the end
+        !postState.isLoading &&
+        postState.hasMore) {
+      // Use ref.read to trigger the fetch action
+      postNotifier.getOwnPosts(userId);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final postState = ref.watch(ownPostProvider);
+    final postNotifier = ref.watch(ownPostProvider.notifier);
     final userId = ref.watch(authProvider);
+    final posts = postState.posts;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -21,52 +66,49 @@ class _MyPostsScreenState extends ConsumerState<MyPostsScreen> {
           style: TextStyle(color: Theme.of(context).primaryColor),
         ),
       ),
-      body: StreamBuilder(
-        stream: ref.read(postProvider.notifier).getOwnPosts(userId),
-        builder: (ctx, snapShot) {
-          if (snapShot.connectionState == ConnectionState.waiting) {
-            return Center(
-              child: SvgPicture.asset(
-                'assets/vectors/Loading-pana.svg',
-                height: 300,
-              ),
-            );
+      body: NotificationListener<ScrollNotification>(
+        onNotification: (ScrollNotification scrollinfo) {
+          if (!postState.isLoading &&
+              postState.hasMore &&
+              scrollinfo.metrics.pixels == scrollinfo.metrics.maxScrollExtent) {
+            postNotifier.getOwnPosts(userId);
           }
-          if (snapShot.hasError) {
-            return Center(
-              child: Center(
-                child: SvgPicture.asset(
-                  'assets/vectors/400-Error-Bad-Request-pana.svg',
-                  height: 300,
-                ),
-              ),
-            );
-          }
-          if (!snapShot.hasData || snapShot.data!.isEmpty) {
-            return Center(
-              child: Center(
-                child: SvgPicture.asset(
-                  'assets/vectors/404-Error-Page-not-Found-with-people-connecting-a-plug-pana.svg',
-                  height: 300,
-                ),
-              ),
-            );
-          }
-
-          final posts = snapShot.data ?? [];
-
-          return ListView.builder(
-            itemCount: posts.length,
-            itemBuilder: (ctx, index) {
-              return PostWidget(
-                post: posts[index],
-                userId: posts[index]['userid'],
-                postID: snapShot.data![index]['id'],
-                isMyPostScreen: true,
-              );
-            },
-          );
+          return false;
         },
+        child: Column(
+          children: [
+            if (posts.isEmpty && !postState.isLoading)
+              Center(
+                child: SvgPicture.asset(
+                  'assets/vectors/No-data-amico.svg',
+                  height: 300,
+                ),
+              ),
+            Expanded(
+              child: ListView.builder(
+                controller: _scrollController,
+                itemCount: posts.length + (postState.isLoading ? 1 : 0),
+                itemBuilder: (ctx, index) {
+                  if (index == posts.length && postState.isLoading) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: CircularProgressIndicator(),
+                      ),
+                    );
+                  }
+
+                  final post = posts[index];
+                  return PostWidget(
+                    post: post,
+                    userId: post['userid'],
+                    postID: post['id'],
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

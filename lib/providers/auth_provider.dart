@@ -50,7 +50,7 @@ class AuthScreenProvider extends StateNotifier {
 final authScreenProvider = StateNotifierProvider((ref) => AuthScreenProvider());
 
 class AuthProvider extends StateNotifier {
-  AuthProvider() : super('');
+  AuthProvider() : super(FirebaseAuth.instance.currentUser?.uid);
 
   String error = '';
   String statue = '';

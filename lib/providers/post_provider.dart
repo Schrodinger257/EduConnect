@@ -4,8 +4,40 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
-class PostProvider extends StateNotifier {
-  PostProvider() : super([]);
+class PostsState {
+  final List<Map<String, dynamic>> posts;
+  final bool isLoading;
+  final bool hasMore;
+  final DocumentSnapshot? lastDocument;
+
+  PostsState({
+    this.posts = const [],
+    this.isLoading = false,
+    this.hasMore = true,
+    this.lastDocument,
+  });
+
+  // Helper method to create a copy of the state with new values
+  PostsState copyWith({
+    List<Map<String, dynamic>>? posts,
+    bool? isLoading,
+    bool? hasMore,
+    DocumentSnapshot? lastDocument,
+    bool clearLastDocument = false, // Flag to handle resetting pagination
+  }) {
+    return PostsState(
+      posts: posts ?? this.posts,
+      isLoading: isLoading ?? this.isLoading,
+      hasMore: hasMore ?? this.hasMore,
+      lastDocument: clearLastDocument
+          ? null
+          : lastDocument ?? this.lastDocument,
+    );
+  }
+}
+
+class PostProvider extends StateNotifier<PostsState> {
+  PostProvider() : super(PostsState());
   Map<String, dynamic> mainUser = {};
 
   Future<void> toggleBookmark(
@@ -109,29 +141,54 @@ class PostProvider extends StateNotifier {
     }
   }
 
-  Stream<List<Map<String, dynamic>>> getPosts() {
-    return FirebaseFirestore.instance
+  Future<void> getPosts() async {
+    if (state.isLoading || !state.hasMore) {
+      return; // Return an empty list if already loading or no more posts
+    }
+
+    state = state.copyWith(isLoading: true);
+
+    Query query = FirebaseFirestore.instance
         .collection('posts')
         .orderBy('timestamp', descending: true)
-        .snapshots()
-        .map((snapShot) {
-          return snapShot.docs.map((doc) {
-            return {...doc.data() as Map<String, dynamic>, 'id': doc.id};
-          }).toList();
-        });
+        .limit(5);
+
+    if (state.lastDocument != null) {
+      query = query.startAfterDocument(state.lastDocument!);
+    }
+
+    QuerySnapshot snapshot = await query.get();
+
+    try {
+      final snapshot = await query.get();
+
+      if (snapshot.docs.isNotEmpty) {
+        final newPosts = snapshot.docs.map((doc) {
+          return {...doc.data() as Map<String, dynamic>, 'id': doc.id};
+        }).toList();
+
+        // Create a new state with the combined list of old and new posts
+        state = state.copyWith(
+          posts: [...state.posts, ...newPosts],
+          lastDocument: snapshot.docs.last,
+          isLoading: false,
+          hasMore: snapshot.docs.length == 5, // Check if there might be more
+        );
+      } else {
+        // No more posts found
+        state = state.copyWith(isLoading: false, hasMore: false);
+      }
+    } catch (e) {
+      print("Error fetching posts: $e");
+      // Handle error state if necessary
+      state = state.copyWith(isLoading: false);
+    }
   }
 
-  Stream<List<Map<String, dynamic>>> getOwnPosts(String userId) {
-    return FirebaseFirestore.instance
-        .collection('posts')
-        .where('userid', isEqualTo: userId)
-        .orderBy('timestamp', descending: true)
-        .snapshots()
-        .map((snapShot) {
-          return snapShot.docs.map((doc) {
-            return {...doc.data() as Map<String, dynamic>, 'id': doc.id};
-          }).toList();
-        });
+  Future<void> refreshPosts() async {
+    // Reset the state completely before fetching the first page
+    state = PostsState();
+    await getPosts();
   }
 
   Stream<List<Map<String, dynamic>>> getBookmarkedPosts(String userId) {
@@ -555,6 +612,61 @@ class PostProvider extends StateNotifier {
   }
 }
 
-final postProvider = StateNotifierProvider((ref) {
+final postProvider = StateNotifierProvider<PostProvider, PostsState>((ref) {
   return PostProvider();
+});
+
+class OwnPostProvider extends StateNotifier<PostsState> {
+  OwnPostProvider() : super(PostsState());
+
+  Future<void> getOwnPosts(String userId) async {
+    if (state.isLoading || !state.hasMore) {
+      return;
+    }
+
+    state = state.copyWith(isLoading: true);
+
+    Query query = FirebaseFirestore.instance
+        .collection('posts')
+        .where('userid', isEqualTo: userId)
+        .orderBy('timestamp', descending: true)
+        .limit(5);
+
+    if (state.lastDocument != null) {
+      query = query.startAfterDocument(state.lastDocument!);
+    }
+
+    // FIX: Remove the redundant try/catch and the duplicate query.get() call
+    try {
+      final snapshot = await query.get();
+
+      if (snapshot.docs.isNotEmpty) {
+        final newPosts = snapshot.docs.map((doc) {
+          return {...doc.data() as Map<String, dynamic>, 'id': doc.id};
+        }).toList();
+
+        state = state.copyWith(
+          posts: [...state.posts, ...newPosts],
+          lastDocument: snapshot.docs.last,
+          isLoading: false,
+          hasMore: snapshot.docs.length == 5,
+        );
+      } else {
+        state = state.copyWith(isLoading: false, hasMore: false);
+      }
+    } catch (e) {
+      print("Error fetching own posts: $e");
+      state = state.copyWith(isLoading: false);
+    }
+  }
+
+  Future<void> refreshOwnPosts(String userId) async {
+    // Reset the state completely before fetching the first page
+    state = PostsState();
+    await getOwnPosts(userId);
+  }
+}
+
+final ownPostProvider = StateNotifierProvider((ref) {
+  return OwnPostProvider();
 });
