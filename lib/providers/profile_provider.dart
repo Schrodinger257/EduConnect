@@ -288,6 +288,7 @@ class ProfileProvider extends StateNotifier<Map<String, dynamic>> {
                             .doc(userId)
                             .update(data)
                             .then((_) {
+                              state = data;
                               Navigator.pop(context);
                             });
                       },

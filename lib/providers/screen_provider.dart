@@ -18,8 +18,11 @@ class ScreenProvider extends StateNotifier<Widget> {
     ProfileScreen(),
   ];
 
+  int index = 2;
+
   void setScreen(int index) {
     state = screens[index];
+    this.index = index;
   }
 }
 

@@ -66,195 +66,214 @@ class _PostWidgetState extends ConsumerState<PostWidget> {
           .doc(widget.userId)
           .snapshots(),
       builder: (ctx, snapShot) {
-        if (snapShot.connectionState == ConnectionState.waiting) {
-          return Center(
-            child: SvgPicture.asset(
-              'assets/vectors/post-Skeleton Loader.svg',
-              height: 300,
-            ),
-          );
-        }
-        if (snapShot.hasError) {
-          return Center(
-            child: SvgPicture.asset(
-              'assets/vectors/post-Skeleton Loader.svg',
-              height: 300,
-            ),
-          );
-        }
-        if (!snapShot.hasData || !snapShot.data!.exists) {
-          return Center(
-            child: SvgPicture.asset(
-              'assets/vectors/post-Skeleton Loader.svg',
-              height: 300,
-            ),
-          );
-        }
-
-        userData.addAll(snapShot.data!.data() as Map<String, dynamic>);
-        print(mainUser);
-
-        return Container(
-          key: ValueKey(widget.postID),
-          width: double.infinity,
-          child: Padding(
-            padding: const EdgeInsets.all(10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: double.infinity,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Theme.of(context).shadowColor,
-                              image: userData['profileImage'] == null
-                                  ? null
-                                  : DecorationImage(
-                                      image: FileImage(
-                                        File(userData['profileImage']),
-                                      ),
-                                      fit: BoxFit.cover,
-                                    ),
-                            ),
-                          ),
-                          SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              userData['name'],
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).shadowColor,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ),
-                          PopupMenuButton(
-                            itemBuilder: (context) {
-                              return [
-                                PopupMenuItem(
-                                  value: 'Bookmark',
-                                  child: Text('Toggle Bookmark'),
-                                ),
-                                if (widget.isMyPostScreen)
-                                  PopupMenuItem(
-                                    value: 'delete',
-                                    child: Text('Delete Post'),
-                                  ),
-                              ];
-                            },
-                            onSelected: (value) {
-                              if (value == 'Bookmark') {
-                                // Handle Bookmark post
-                                ref
-                                    .read(postProvider.notifier)
-                                    .toggleBookmark(
-                                      ref.read(authProvider) as String,
-                                      widget.postID,
-                                      context,
-                                    );
-                              } else if (value == 'delete') {
-                                // Handle delete post
-                                ref
-                                    .read(postProvider.notifier)
-                                    .deletePost(context, widget.postID);
-                              }
-                            },
-                          ),
-                        ],
-                      ),
-                      Wrap(
-                        direction: Axis.horizontal,
-                        children: (widget.post['tags'] as List)
-                            .map((tag) => _tag(context, tag))
-                            .toList(),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 20),
-                Text(
-                  widget.post['content'],
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Theme.of(context).shadowColor,
-                  ),
-                ),
-                SizedBox(height: 5),
-                if (widget.post['image'] != null)
-                  GestureDetector(
-                    onTap: () {
-                      showImageViewer(
-                        context,
-                        Image.file(File(widget.post['image'])).image,
-                        useSafeArea: true,
-                        doubleTapZoomable: true,
-                        closeButtonColor: Theme.of(context).primaryColor,
-                        swipeDismissible: true,
-                      );
-                    },
-                    child: Image.file(
-                      File(widget.post['image']),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      TextButton.icon(
-                        onPressed: () {
-                          _toggleLike();
-                        },
-                        label: Text(
-                          'Like',
-                          style: TextStyle(
-                            color: isLiked
-                                ? likeColor
-                                : Theme.of(context).shadowColor,
-                          ),
-                        ),
-                        icon: Icon(
-                          Icons.thumb_up,
-                          color: isLiked
-                              ? likeColor
-                              : Theme.of(context).shadowColor,
-                        ),
-                      ),
-
-                      TextButton.icon(
-                        onPressed: () {
-                          _toggleLike();
-                        },
-                        label: Text(
-                          'Comments',
-                          style: TextStyle(
-                            color: Theme.of(context).shadowColor,
-                          ),
-                        ),
-                        icon: Icon(
-                          Icons.comment,
-                          color: Theme.of(context).shadowColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 20),
-              ],
-            ),
+        return AnimatedSwitcher(
+          duration: Duration(milliseconds: 500),
+          child: _buildChild(
+            ctx: ctx,
+            snapShot: snapShot,
+            userData: userData,
+            mainUser: mainUser,
+            likeColor: likeColor,
+            bookmarkColor: bookmarkColor,
           ),
         );
       },
+    );
+  }
+
+  Widget _buildChild({
+    required BuildContext ctx,
+    required AsyncSnapshot snapShot,
+    required Map<String, dynamic> userData,
+    required Map<String, dynamic> mainUser,
+    required Color likeColor,
+    required Color bookmarkColor,
+  }) {
+    if (snapShot.connectionState == ConnectionState.waiting) {
+      return Center(
+        child: SvgPicture.asset(
+          'assets/vectors/post-Skeleton Loader.svg',
+          height: 300,
+        ),
+      );
+    }
+    if (snapShot.hasError) {
+      return Center(
+        child: SvgPicture.asset(
+          'assets/vectors/post-Skeleton Loader.svg',
+          height: 300,
+        ),
+      );
+    }
+    if (!snapShot.hasData || !snapShot.data!.exists) {
+      return Center(
+        child: SvgPicture.asset(
+          'assets/vectors/post-Skeleton Loader.svg',
+          height: 300,
+        ),
+      );
+    }
+
+    userData.addAll(snapShot.data!.data() as Map<String, dynamic>);
+    print(mainUser);
+
+    return Container(
+      key: ValueKey(widget.postID),
+      width: double.infinity,
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: double.infinity,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Theme.of(context).shadowColor,
+                          image: userData['profileImage'] == null
+                              ? null
+                              : DecorationImage(
+                                  image: FileImage(
+                                    File(userData['profileImage']),
+                                  ),
+                                  fit: BoxFit.cover,
+                                ),
+                        ),
+                      ),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          userData['name'],
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).shadowColor,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                      PopupMenuButton(
+                        itemBuilder: (context) {
+                          return [
+                            PopupMenuItem(
+                              value: 'Bookmark',
+                              child: Text('Toggle Bookmark'),
+                            ),
+                            if (widget.isMyPostScreen)
+                              PopupMenuItem(
+                                value: 'delete',
+                                child: Text('Delete Post'),
+                              ),
+                          ];
+                        },
+                        onSelected: (value) {
+                          if (value == 'Bookmark') {
+                            // Handle Bookmark post
+                            ref
+                                .read(postProvider.notifier)
+                                .toggleBookmark(
+                                  ref.read(authProvider) as String,
+                                  widget.postID,
+                                  context,
+                                );
+                          } else if (value == 'delete') {
+                            // Handle delete post
+                            ref
+                                .read(postProvider.notifier)
+                                .deletePost(context, widget.postID);
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                  Wrap(
+                    direction: Axis.horizontal,
+                    children: (widget.post['tags'] as List)
+                        .map((tag) => _tag(context, tag))
+                        .toList(),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 20),
+            Text(
+              widget.post['content'],
+              style: TextStyle(
+                fontSize: 16,
+                color: Theme.of(context).shadowColor,
+              ),
+            ),
+            SizedBox(height: 5),
+            if (widget.post['image'] != null)
+              GestureDetector(
+                onTap: () {
+                  showImageViewer(
+                    context,
+                    Image.file(File(widget.post['image'])).image,
+                    useSafeArea: true,
+                    doubleTapZoomable: true,
+                    closeButtonColor: Theme.of(context).primaryColor,
+                    swipeDismissible: true,
+                  );
+                },
+                child: Image.file(
+                  File(widget.post['image']),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  TextButton.icon(
+                    onPressed: () {
+                      _toggleLike();
+                    },
+                    label: Text(
+                      'Like',
+                      style: TextStyle(
+                        color: isLiked
+                            ? likeColor
+                            : Theme.of(context).shadowColor,
+                      ),
+                    ),
+                    icon: Icon(
+                      Icons.thumb_up,
+                      color: isLiked
+                          ? likeColor
+                          : Theme.of(context).shadowColor,
+                    ),
+                  ),
+
+                  TextButton.icon(
+                    onPressed: () {
+                      _toggleLike();
+                    },
+                    label: Text(
+                      'Comments',
+                      style: TextStyle(color: Theme.of(context).shadowColor),
+                    ),
+                    icon: Icon(
+                      Icons.comment,
+                      color: Theme.of(context).shadowColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 20),
+          ],
+        ),
+      ),
     );
   }
 }

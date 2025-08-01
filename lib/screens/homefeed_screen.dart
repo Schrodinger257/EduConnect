@@ -91,28 +91,13 @@ class _HomeFeedScreenState extends ConsumerState<HomeFeedScreen> {
                   .snapshots(),
               builder: (ctx, snapShot) {
                 if (snapShot.connectionState == ConnectionState.waiting) {
-                  return Center(
-                    child: SvgPicture.asset(
-                      'assets/vectors/Loading-pana.svg',
-                      height: 300,
-                    ),
-                  );
+                  return Center(child: Text('loading...'));
                 }
                 if (snapShot.hasError) {
-                  return Center(
-                    child: SvgPicture.asset(
-                      'assets/vectors/400-Error-Bad-Request-pana.svg',
-                      height: 300,
-                    ),
-                  );
+                  return Center(child: Text('Error loading user data'));
                 }
                 if (!snapShot.hasData || !snapShot.data!.exists) {
-                  return Center(
-                    child: SvgPicture.asset(
-                      'assets/vectors/404-Error-Page-not-Found-with-people-connecting-a-plug-pana.svg',
-                      height: 300,
-                    ),
-                  );
+                  return Center(child: Text('No user data available'));
                 }
 
                 userData.addAll(snapShot.data!.data() as Map<String, dynamic>);

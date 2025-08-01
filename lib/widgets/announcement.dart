@@ -47,9 +47,7 @@ class _AnnouncementWidgetState extends ConsumerState<AnnouncementWidget> {
 
   @override
   Widget build(BuildContext context) {
-    Color likeColor = Theme.of(context).primaryColor;
     final Map<String, dynamic> userData = {};
-    Map<String, dynamic> mainUser = {};
 
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance
@@ -57,154 +55,162 @@ class _AnnouncementWidgetState extends ConsumerState<AnnouncementWidget> {
           .doc(widget.userId)
           .snapshots(),
       builder: (ctx, snapShot) {
-        if (snapShot.connectionState == ConnectionState.waiting) {
-          return Center(
-            child: SvgPicture.asset(
-              'assets/vectors/post-Skeleton Loader.svg',
-              height: 300,
-            ),
-          );
-        }
-        if (snapShot.hasError) {
-          return Center(
-            child: SvgPicture.asset(
-              'assets/vectors/post-Skeleton Loader.svg',
-              height: 300,
-            ),
-          );
-        }
-        if (!snapShot.hasData || !snapShot.data!.exists) {
-          return Center(
-            child: SvgPicture.asset(
-              'assets/vectors/post-Skeleton Loader.svg',
-              height: 300,
-            ),
-          );
-        }
+        return AnimatedSwitcher(
+          duration: Duration(milliseconds: 500),
+          child: _buildChild(ctx, snapShot, userData),
+        );
+      },
+    );
+  }
 
-        userData.addAll(snapShot.data!.data() as Map<String, dynamic>);
-        print(mainUser);
+  Widget _buildChild(
+    BuildContext ctx,
+    AsyncSnapshot snapShot,
+    Map<String, dynamic> userData,
+  ) {
+    if (snapShot.connectionState == ConnectionState.waiting) {
+      return Center(
+        child: SvgPicture.asset(
+          'assets/vectors/announcement-Skeleton Loader.svg',
+          height: 150,
+        ),
+      );
+    }
+    if (snapShot.hasError) {
+      return Center(
+        child: SvgPicture.asset(
+          'assets/vectors/announcement-Skeleton Loader.svg',
+          height: 150,
+        ),
+      );
+    }
+    if (!snapShot.hasData || !snapShot.data!.exists) {
+      return Center(
+        child: SvgPicture.asset(
+          'assets/vectors/announcement-Skeleton Loader.svg',
+          height: 150,
+        ),
+      );
+    }
 
-        return Card(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          elevation: 0,
-          key: ValueKey(widget.postID),
-          child: Padding(
-            padding: const EdgeInsets.all(10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: double.infinity,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+    userData.addAll(snapShot.data!.data() as Map<String, dynamic>);
+
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      elevation: 0,
+      key: ValueKey(widget.postID),
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: double.infinity,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Theme.of(context).shadowColor,
-                              image: userData['profileImage'] == null
-                                  ? null
-                                  : DecorationImage(
-                                      image: FileImage(
-                                        File(userData['profileImage']),
-                                      ),
-                                      fit: BoxFit.cover,
-                                    ),
-                            ),
-                          ),
-                          SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              userData['name'],
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).shadowColor,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ),
-                          PopupMenuButton(
-                            itemBuilder: (context) {
-                              return [
-                                PopupMenuItem(
-                                  value: 'announce',
-                                  child: Text('Toggle Announcement'),
-                                ),
-                                if (widget.isMyAnnouncementScreen)
-                                  PopupMenuItem(
-                                    value: 'delete',
-                                    child: Text('Delete Announcement'),
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Theme.of(context).shadowColor,
+                          image: userData['profileImage'] == null
+                              ? null
+                              : DecorationImage(
+                                  image: FileImage(
+                                    File(userData['profileImage']),
                                   ),
-                              ];
-                            },
-                            onSelected: (value) {
-                              if (value == 'announce') {
-                                // Handle announce post
-                                ref
-                                    .read(announceProvider.notifier)
-                                    .toggleAnnouncement(
-                                      widget.userId,
-                                      widget.postID,
-                                      context,
-                                    );
-                              } else if (value == 'delete') {
-                                // Handle delete post
-                                ref
-                                    .read(announceProvider.notifier)
-                                    .deleteAnnouncement(context, widget.postID);
-                              }
-                            },
-                          ),
-                        ],
+                                  fit: BoxFit.cover,
+                                ),
+                        ),
                       ),
-                      Wrap(
-                        direction: Axis.horizontal,
-                        children: (widget.post['tags'] as List)
-                            .map((tag) => _tag(context, tag))
-                            .toList(),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          userData['name'],
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).shadowColor,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                      PopupMenuButton(
+                        itemBuilder: (context) {
+                          return [
+                            PopupMenuItem(
+                              value: 'announce',
+                              child: Text('Toggle Announcement'),
+                            ),
+                            if (widget.isMyAnnouncementScreen)
+                              PopupMenuItem(
+                                value: 'delete',
+                                child: Text('Delete Announcement'),
+                              ),
+                          ];
+                        },
+                        onSelected: (value) {
+                          if (value == 'announce') {
+                            // Handle announce post
+                            ref
+                                .read(announceProvider.notifier)
+                                .toggleAnnouncement(
+                                  widget.userId,
+                                  widget.postID,
+                                  context,
+                                );
+                          } else if (value == 'delete') {
+                            // Handle delete post
+                            ref
+                                .read(announceProvider.notifier)
+                                .deleteAnnouncement(context, widget.postID);
+                          }
+                        },
                       ),
                     ],
                   ),
-                ),
-                SizedBox(height: 20),
-                Text(
-                  widget.post['content'],
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Theme.of(context).shadowColor,
+                  Wrap(
+                    direction: Axis.horizontal,
+                    children: (widget.post['tags'] as List)
+                        .map((tag) => _tag(context, tag))
+                        .toList(),
                   ),
-                ),
-                SizedBox(height: 5),
-                if (widget.post['image'] != null)
-                  GestureDetector(
-                    onTap: () {
-                      showImageViewer(
-                        context,
-                        Image.file(File(widget.post['image'])).image,
-                        useSafeArea: true,
-                        doubleTapZoomable: true,
-                        closeButtonColor: Theme.of(context).primaryColor,
-                        swipeDismissible: true,
-                      );
-                    },
-                    child: Image.file(
-                      File(widget.post['image']),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                SizedBox(height: 20),
-              ],
+                ],
+              ),
             ),
-          ),
-        );
-      },
+            SizedBox(height: 20),
+            Text(
+              widget.post['content'],
+              style: TextStyle(
+                fontSize: 16,
+                color: Theme.of(context).shadowColor,
+              ),
+            ),
+            SizedBox(height: 5),
+            if (widget.post['image'] != null)
+              GestureDetector(
+                onTap: () {
+                  showImageViewer(
+                    context,
+                    Image.file(File(widget.post['image'])).image,
+                    useSafeArea: true,
+                    doubleTapZoomable: true,
+                    closeButtonColor: Theme.of(context).primaryColor,
+                    swipeDismissible: true,
+                  );
+                },
+                child: Image.file(
+                  File(widget.post['image']),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            SizedBox(height: 20),
+          ],
+        ),
+      ),
     );
   }
 }

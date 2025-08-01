@@ -13,7 +13,7 @@
 <rect x="593" y="566" width="364" height="70" rx="6" fill="#BEBEBE"/>
 <rect x="15" y="566" width="70" height="70" rx="6" fill="#BEBEBE"/>
 <rect x="515" y="566" width="70" height="70" rx="6" fill="#BEBEBE"/>
-<rect x="887" y="2" width="70" height="70" rx="6" fill="#BEBEBE"/>
+<rect x="947" y="2" width="10" height="70" rx="5" fill="#BEBEBE"/>
 </g>
 <defs>
 <clipPath id="clip0_4_58">

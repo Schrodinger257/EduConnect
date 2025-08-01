@@ -1,10 +1,17 @@
+import 'package:educonnect/screens/Announcement_screen.dart';
+import 'package:educonnect/screens/chat_screen.dart';
+import 'package:educonnect/screens/courses_screen.dart';
+import 'package:educonnect/screens/homefeed_screen.dart';
+import 'package:educonnect/screens/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:salomon_bottom_bar/salomon_bottom_bar.dart';
 import 'package:educonnect/providers/screen_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class GoogleBottomBar extends ConsumerStatefulWidget {
-  const GoogleBottomBar({super.key});
+  const GoogleBottomBar(this.selectedIndex, {super.key});
+
+  final int selectedIndex;
 
   @override
   ConsumerState<GoogleBottomBar> createState() => _GoogleBottomBarState();
@@ -13,10 +20,10 @@ class GoogleBottomBar extends ConsumerStatefulWidget {
 class _GoogleBottomBarState extends ConsumerState<GoogleBottomBar> {
   @override
   Widget build(BuildContext context) {
-    int _selectedIndex = ref
-        .watch(screenProvider.notifier)
-        .screens
-        .indexOf(ref.watch(screenProvider));
+    // Widget currentScreen = ref.watch(screenProvider);
+    int _selectedIndex = widget.selectedIndex;
+    print(_selectedIndex);
+
     return SalomonBottomBar(
       margin: const EdgeInsets.only(bottom: 20, top: 10),
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,

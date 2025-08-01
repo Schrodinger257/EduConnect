@@ -56,6 +56,17 @@ class AuthProvider extends StateNotifier {
   String statue = '';
   Map<String, dynamic> userData = {};
 
+  Future<Map<String, dynamic>> getUserData(String userId) async {
+    Map<String, dynamic> data = {};
+    await FirebaseFirestore.instance.collection('users').doc(userId).get().then(
+      (doc) {
+        data = doc.data() as Map<String, dynamic>;
+      },
+    );
+
+    return data;
+  }
+
   Future<void> logout(BuildContext context) async {
     try {
       await FirebaseAuth.instance.signOut();
