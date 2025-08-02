@@ -1,17 +1,13 @@
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:educonnect/providers/post_provider.dart';
-import 'package:educonnect/screens/Announcement_screen.dart';
 import 'package:educonnect/screens/bookmarks_screen.dart';
 import 'package:educonnect/screens/my_announcement_screen.dart';
 import 'package:educonnect/screens/my_posts_screen.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:educonnect/providers/auth_provider.dart';
 import 'package:educonnect/providers/profile_provider.dart';
-import 'package:educonnect/providers/screen_provider.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -240,14 +236,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   ),
                                   shape: BoxShape.circle,
                                   color: Theme.of(context).shadowColor,
-                                  image: userData['profileImage'] == null
-                                      ? null
-                                      : DecorationImage(
-                                          image: FileImage(
+                                  image: DecorationImage(
+                                    image:
+                                        userData['profileImage'] ==
+                                            'default_avatar'
+                                        ? AssetImage(
+                                            'assets/images/default_avatar.png',
+                                          )
+                                        : FileImage(
                                             File(userData['profileImage']),
                                           ),
-                                          fit: BoxFit.cover,
-                                        ),
+                                    fit: BoxFit.cover,
+                                  ),
                                 ),
                               ),
                               IconButton(

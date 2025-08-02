@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:educonnect/providers/auth_provider.dart';
 import 'package:educonnect/providers/announce_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -117,14 +116,12 @@ class _AnnouncementWidgetState extends ConsumerState<AnnouncementWidget> {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: Theme.of(context).shadowColor,
-                          image: userData['profileImage'] == null
-                              ? null
-                              : DecorationImage(
-                                  image: FileImage(
-                                    File(userData['profileImage']),
-                                  ),
-                                  fit: BoxFit.cover,
-                                ),
+                          image: DecorationImage(
+                            image: userData['profileImage'] == 'default_avatar'
+                                ? AssetImage('assets/images/default_avatar.png')
+                                : FileImage(File(userData['profileImage'])),
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ),
                       SizedBox(width: 10),

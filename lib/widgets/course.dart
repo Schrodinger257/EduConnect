@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:educonnect/providers/auth_provider.dart';
 import 'package:educonnect/screens/course_item_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -110,15 +108,13 @@ class _CourseWidgetState extends ConsumerState<CourseWidget> {
           Spacer(),
           ElevatedButton.icon(
             onPressed: () async {
-              Map<String, dynamic> courseCreator = await ref
-                  .read(authProvider.notifier)
-                  .getUserData(widget.userId);
+              // Map<String, dynamic> courseCreator = await ref
+              //     .read(authProvider.notifier)
+              //     .getUserData(widget.userId);
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (context) => CourseItemScreen(
-                    courseId: widget.courseId,
-                    courseCreator: courseCreator,
-                  ),
+                  builder: (context) =>
+                      CourseItemScreen(courseId: widget.courseId),
                 ),
               );
             },

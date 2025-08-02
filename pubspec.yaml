@@ -76,6 +76,7 @@ flutter:
     - assets/vectors/post-Skeleton Loader.svg
     - assets/vectors/announcement-Skeleton Loader.svg
     - assets/vectors/course.svg
+    - assets/images/default_avatar.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

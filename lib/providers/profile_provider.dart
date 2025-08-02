@@ -1,9 +1,6 @@
-import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:educonnect/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 
@@ -12,10 +9,24 @@ class ProfileProvider extends StateNotifier<Map<String, dynamic>> {
   final ImagePicker _picker = ImagePicker();
   File? selectedImage;
   Map<String, dynamic> user = {};
+  Map<String, dynamic> userData = {};
 
   // void updateProfile(Map<String, dynamic> profileData) {
   //   state = profileData;
   // }
+
+  void getUserData(String userId) async {
+    DocumentSnapshot snapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .get();
+    if (snapshot.exists) {
+      userData = snapshot.data() as Map<String, dynamic>;
+      state = userData;
+    } else {
+      print('User not found');
+    }
+  }
 
   void setProfileImage(BuildContext context, String userid) async {
     showModalBottomSheet(
@@ -136,6 +147,7 @@ class ProfileProvider extends StateNotifier<Map<String, dynamic>> {
                         ),
                         SizedBox(height: 20),
                         TextFormField(
+                          maxLength: 12,
                           initialValue: data['phone'],
                           decoration: InputDecoration(
                             labelText: 'phone',

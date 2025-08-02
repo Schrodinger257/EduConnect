@@ -4,9 +4,6 @@ import 'package:educonnect/providers/course_provider.dart';
 import 'package:educonnect/widgets/course.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:educonnect/providers/post_provider.dart';
-import 'package:educonnect/widgets/post.dart';
-import 'package:educonnect/providers/profile_provider.dart';
 import 'dart:io';
 
 import 'package:flutter_svg/svg.dart';

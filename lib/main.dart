@@ -1,4 +1,3 @@
-import 'package:educonnect/screens/auth_screen.dart';
 import 'package:educonnect/screens/nav_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -31,7 +30,7 @@ class _MyAppState extends ConsumerState<MyApp> {
       darkTheme: ThemeData.dark().copyWith(
         primaryColor: const Color.fromARGB(255, 255, 114, 94),
         shadowColor: const Color.fromARGB(255, 255, 252, 248),
-        cardColor: const Color.fromARGB(255, 139, 37, 37),
+        cardColor: const Color.fromARGB(255, 104, 52, 45),
         scaffoldBackgroundColor: const Color.fromARGB(255, 23, 25, 32),
         cardTheme: CardThemeData(
           color: const Color.fromARGB(255, 34, 37, 48),

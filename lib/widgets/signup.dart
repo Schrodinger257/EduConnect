@@ -106,6 +106,7 @@ class _SignupWidgetState extends ConsumerState<SignupWidget> {
                           child: TextFormField(
                             autocorrect: false,
                             textCapitalization: TextCapitalization.none,
+                            enableSuggestions: true,
                             decoration: decoration('Email'),
                             keyboardType: TextInputType.emailAddress,
                             validator: (value) {
@@ -132,7 +133,7 @@ class _SignupWidgetState extends ConsumerState<SignupWidget> {
                             enableSuggestions: false,
                             textCapitalization: TextCapitalization.none,
                             decoration: decoration('Password'),
-                            obscureText: true,
+                            obscureText: false,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return 'Please enter your password';
@@ -155,7 +156,7 @@ class _SignupWidgetState extends ConsumerState<SignupWidget> {
                             textCapitalization: TextCapitalization.none,
 
                             decoration: decoration('Confirm Password'),
-                            obscureText: true,
+                            obscureText: false,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return 'Please confirm your password';

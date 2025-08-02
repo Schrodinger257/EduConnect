@@ -1,3 +1,5 @@
+import 'package:educonnect/providers/auth_provider.dart';
+import 'package:educonnect/providers/profile_provider.dart';
 import 'package:educonnect/screens/Announcement_screen.dart';
 import 'package:educonnect/screens/chat_screen.dart';
 import 'package:educonnect/screens/courses_screen.dart';
@@ -23,6 +25,17 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     ChatScreen(),
     ProfileScreen(),
   ];
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref
+          .read(profileProvider.notifier)
+          .getUserData(ref.read(authProvider) as String);
+    });
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:educonnect/providers/post_provider.dart';
 import 'package:educonnect/widgets/post.dart';
-import 'package:educonnect/providers/profile_provider.dart';
 import 'dart:io';
 
 import 'package:flutter_svg/svg.dart';
@@ -124,14 +123,18 @@ class _HomeFeedScreenState extends ConsumerState<HomeFeedScreen> {
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: Theme.of(context).shadowColor,
-                                image: userData['profileImage'] == null
-                                    ? null
-                                    : DecorationImage(
-                                        image: FileImage(
+                                image: DecorationImage(
+                                  image:
+                                      userData['profileImage'] ==
+                                          'default_avatar'
+                                      ? AssetImage(
+                                          'assets/images/default_avatar.png',
+                                        )
+                                      : FileImage(
                                           File(userData['profileImage']),
                                         ),
-                                        fit: BoxFit.cover,
-                                      ),
+                                  fit: BoxFit.cover,
+                                ),
                               ),
                             ),
                             SizedBox(width: 10),
@@ -212,39 +215,64 @@ class _HomeFeedScreenState extends ConsumerState<HomeFeedScreen> {
                 return false;
               },
               child: Expanded(
-                child: Column(
-                  children: [
-                    if (posts.isEmpty && !postState.isLoading)
-                      Center(
-                        child: SvgPicture.asset(
-                          'assets/vectors/No-data-amico.svg',
-                          height: 300,
-                        ),
-                      ),
-                    Expanded(
-                      child: ListView.builder(
-                        controller: _scrollController,
-                        itemCount: posts.length + (postState.isLoading ? 1 : 0),
-                        itemBuilder: (ctx, index) {
-                          if (index == posts.length && postState.isLoading) {
-                            return Center(
-                              child: Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: CircularProgressIndicator(),
+                child: RefreshIndicator(
+                  // 1. Call your new refresh method on swipe
+                  onRefresh: () =>
+                      ref.read(postProvider.notifier).refreshPosts(),
+                  child: Column(
+                    children: [
+                      // This logic remains the same
+                      if (posts.isEmpty && !postState.isLoading)
+                        // Wrap in a LayoutBuilder to ensure refresh works on an empty list
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            return SingleChildScrollView(
+                              physics: AlwaysScrollableScrollPhysics(),
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minHeight: constraints.maxHeight,
+                                ),
+                                child: Center(
+                                  child: SvgPicture.asset(
+                                    'assets/vectors/No-data-amico.svg',
+                                    height: 300,
+                                  ),
+                                ),
                               ),
                             );
-                          }
+                          },
+                        ),
+                      // 2. REMOVE the FutureBuilder and use a ListView.builder directly
+                      Expanded(
+                        child: ListView.builder(
+                          controller: _scrollController,
+                          // 3. Use the state from the provider for item count
+                          itemCount:
+                              posts.length + (postState.isLoading ? 1 : 0),
+                          itemBuilder: (ctx, index) {
+                            // Logic for showing the loading spinner at the bottom
+                            if (index >= posts.length) {
+                              return Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: CircularProgressIndicator(),
+                                ),
+                              );
+                            }
 
-                          final post = posts[index];
-                          return PostWidget(
-                            post: post,
-                            userId: post['userid'],
-                            postID: post['id'],
-                          );
-                        },
+                            // 4. Get the post from the provider's state
+                            final post = posts[index];
+                            return PostWidget(
+                              post: post,
+                              userId: post['userid'],
+                              // The post ID should be part of the post map
+                              postID: post['id'],
+                            );
+                          },
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

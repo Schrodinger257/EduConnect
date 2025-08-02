@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:educonnect/providers/auth_provider.dart';
 import 'package:educonnect/providers/post_provider.dart';
 import 'package:educonnect/widgets/post.dart';

@@ -188,6 +188,10 @@ class PostProvider extends StateNotifier<PostsState> {
   Future<void> refreshPosts() async {
     // Reset the state completely before fetching the first page
     state = PostsState();
+    print(
+      '#####################################################################',
+    );
+    print(state.posts);
     await getPosts();
   }
 
