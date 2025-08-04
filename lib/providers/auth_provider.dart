@@ -112,10 +112,6 @@ class AuthProvider extends StateNotifier {
           .doc(userCredential.user!.uid)
           .get()
           .then((doc) => doc.data() as Map<String, dynamic>);
-      Navigator.of(
-        context,
-      ).pushReplacement(MaterialPageRoute(builder: (context) => MainScreen()));
-
       ScaffoldMessenger.of(context).clearSnackBars();
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
@@ -124,6 +120,9 @@ class AuthProvider extends StateNotifier {
           backgroundColor: Colors.green,
         ),
       );
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (context) => MainScreen()));
 
       print('User logged in: ${userCredential.user?.uid}');
     } catch (e) {
@@ -179,9 +178,6 @@ class AuthProvider extends StateNotifier {
           .get()
           .then((doc) => doc.data() as Map<String, dynamic>);
 
-      Navigator.of(
-        context,
-      ).pushReplacement(MaterialPageRoute(builder: (context) => MainScreen()));
       ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -189,6 +185,9 @@ class AuthProvider extends StateNotifier {
           backgroundColor: Colors.green,
         ),
       );
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (context) => MainScreen()));
 
       // Additional logic for user creation can be added here
       print('User signed up: ${userCredential.user?.uid}');

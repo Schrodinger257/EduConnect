@@ -506,10 +506,12 @@ class PostProvider extends StateNotifier<PostsState> {
                                     await Supabase.instance.client.storage
                                         .from('posts')
                                         .remove(['${userId}.png']);
+                                    final url =
+                                        '${userId}${DateTime.now().millisecondsSinceEpoch}.png';
                                     await Supabase.instance.client.storage
                                         .from('posts')
                                         .upload(
-                                          '${userId}?${DateTime.now().millisecondsSinceEpoch}.png',
+                                          url,
                                           selectedImage!,
                                           fileOptions: FileOptions(
                                             upsert: true,
@@ -517,7 +519,7 @@ class PostProvider extends StateNotifier<PostsState> {
                                         );
                                     imageUrl = Supabase.instance.client.storage
                                         .from('posts')
-                                        .getPublicUrl('${userId}.png');
+                                        .getPublicUrl(url);
                                   }
                                 },
 
@@ -546,6 +548,23 @@ class PostProvider extends StateNotifier<PostsState> {
                                     setState(() {
                                       selectedImage = File(image.path);
                                     });
+                                    await Supabase.instance.client.storage
+                                        .from('posts')
+                                        .remove(['${userId}.png']);
+                                    final url =
+                                        '${userId}${DateTime.now().millisecondsSinceEpoch}.png';
+                                    await Supabase.instance.client.storage
+                                        .from('posts')
+                                        .upload(
+                                          url,
+                                          selectedImage!,
+                                          fileOptions: FileOptions(
+                                            upsert: true,
+                                          ),
+                                        );
+                                    imageUrl = Supabase.instance.client.storage
+                                        .from('posts')
+                                        .getPublicUrl(url);
                                   }
                                 },
                               ),

@@ -242,6 +242,19 @@ class _PostWidgetState extends ConsumerState<PostWidget> {
                       );
                     },
                     child: Image.network(
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return SizedBox(
+                          height: 250,
+                          child: CircularProgressIndicator(
+                            color: Theme.of(context).primaryColor,
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                      (loadingProgress.expectedTotalBytes ?? 1)
+                                : null,
+                          ),
+                        );
+                      },
                       widget.post['image'],
                       fit: BoxFit.cover,
                     ),

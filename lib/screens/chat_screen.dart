@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:educonnect/providers/auth_provider.dart';
 import 'package:educonnect/screens/chat_message_screen.dart';
 import 'package:educonnect/screens/chat_search%20screen.dart';
+import 'package:educonnect/widgets/chat_screen_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -93,33 +94,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         orElse: () => '',
                       );
                       final recieverData = chat['users'][recieverId];
-                      return ListTile(
-                        leading: CircleAvatar(
-                          backgroundImage:
-                              recieverData['profileImage'] != 'default_avatar'
-                              ? NetworkImage(recieverData['profileImage'])
-                              : AssetImage('assets/images/default_avatar.png')
-                                    as ImageProvider,
-                        ),
-                        title: Text(recieverData['name'] ?? 'Unknown User'),
-                        subtitle: Text(
-                          '${chat['lastSender'] == ref.read(authProvider) ? 'You:' : ''} ${chat['lastMessage']}',
-                          style: TextStyle(
-                            color: Theme.of(context).shadowColor.withAlpha(150),
-                          ),
-                        ),
-                        onTap: () {
-                          final chatId = snapshot.data!.docs[index].id;
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => ChatMessageScreen(
-                                chatId: chatId,
-                                receiver: recieverData,
-                                receiverId: recieverId,
-                              ),
-                            ),
-                          );
-                        },
+                      return ChatScreenTile(
+                        userId: userId,
+                        chat: chat,
+                        chatId: snapshot.data!.docs[index].id,
+                        recieverId: recieverId,
+                        key: ValueKey(snapshot.data!.docs[index].id),
                       );
                     },
                   );

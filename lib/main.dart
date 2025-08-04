@@ -31,6 +31,10 @@ class _MyAppState extends ConsumerState<MyApp> {
         shadowColor: const Color.fromARGB(255, 69, 90, 100),
         cardColor: const Color.fromARGB(255, 255, 214, 209),
         scaffoldBackgroundColor: const Color.fromARGB(255, 255, 255, 255),
+        cardTheme: CardThemeData(
+          color: const Color.fromARGB(255, 255, 214, 209),
+          shadowColor: const Color.fromARGB(255, 69, 90, 100),
+        ),
       ),
       home: NavScreen(),
       darkTheme: ThemeData.dark().copyWith(
