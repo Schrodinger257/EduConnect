@@ -125,10 +125,10 @@ class ErrorHandler {
   static void showErrorSnackBar(
     BuildContext context,
     Exception error, {
-    String? context,
+    String? errorContext,
     Duration duration = const Duration(seconds: 4),
   }) {
-    final message = handleError(error, context: context);
+    final message = handleError(error, context: errorContext);
     
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -184,10 +184,10 @@ class ErrorHandler {
     BuildContext context,
     Exception error, {
     String? title,
-    String? context,
+    String? errorContext,
     VoidCallback? onRetry,
   }) {
-    final message = handleError(error, context: context);
+    final message = handleError(error, context: errorContext);
     
     showDialog(
       context: context,

@@ -46,8 +46,10 @@ void main() {
         duration: 40,
         prerequisites: 'Basic programming knowledge',
       );
-    });    gr
-oup('JSON serialization', () {
+    });
+  });
+
+  group('JSON serialization', () {
       test('should serialize to JSON correctly', () {
         final json = testCourse.toJson();
 
@@ -135,8 +137,10 @@ oup('JSON serialization', () {
 
         expect(() => Course.fromJson(invalidJson), throwsFormatException);
       });
-    });    gr
-oup('validation', () {
+    });
+  });
+
+  group('validation', () {
       test('should validate correct course data', () {
         final result = Course.validate(
           id: 'course123',
