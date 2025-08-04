@@ -45,7 +45,7 @@ jobs:
       
     - name: Sign APK
       uses: r0adkll/sign-android-release@v1
-      if: ${{ secrets.KEYSTORE_BASE64 }}
+      if: ${{ secrets.KEYSTORE_BASE64 != '' }}
       id: sign_app
       with:
         releaseDirectory: build/app/outputs/flutter-apk
