@@ -3,10 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await Supabase.initialize(
+    url: 'https://cfqiasiclorneohrejlm.supabase.co',
+    anonKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNmcWlhc2ljbG9ybmVvaHJlamxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzMTU2NjUsImV4cCI6MjA2OTg5MTY2NX0.s6H2iF7AZoHDrVHsA3UGI4iSR5UEWbqcMMdJA6j3oUs',
+  );
   runApp(ProviderScope(child: MyApp()));
 }
 

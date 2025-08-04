@@ -143,9 +143,7 @@ class _PostWidgetState extends ConsumerState<PostWidget> {
                                       ? AssetImage(
                                           'assets/images/default_avatar.png',
                                         )
-                                      : FileImage(
-                                          File(userData['profileImage']),
-                                        ),
+                                      : NetworkImage(userData['profileImage']),
 
                                   fit: BoxFit.cover,
                                 ),

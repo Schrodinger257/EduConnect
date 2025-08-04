@@ -146,8 +146,8 @@ class _CoursesScreenState extends ConsumerState<CoursesScreen> {
                                   image: userData['profileImage'] == null
                                       ? null
                                       : DecorationImage(
-                                          image: FileImage(
-                                            File(userData['profileImage']),
+                                          image: NetworkImage(
+                                            userData['profileImage'],
                                           ),
                                           fit: BoxFit.cover,
                                         ),

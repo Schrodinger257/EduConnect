@@ -119,7 +119,7 @@ class _AnnouncementWidgetState extends ConsumerState<AnnouncementWidget> {
                           image: DecorationImage(
                             image: userData['profileImage'] == 'default_avatar'
                                 ? AssetImage('assets/images/default_avatar.png')
-                                : FileImage(File(userData['profileImage'])),
+                                : NetworkImage(userData['profileImage']),
                             fit: BoxFit.cover,
                           ),
                         ),

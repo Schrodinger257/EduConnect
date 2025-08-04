@@ -97,7 +97,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         leading: CircleAvatar(
                           backgroundImage:
                               recieverData['profileImage'] != 'default_avatar'
-                              ? FileImage(File(recieverData['profileImage']))
+                              ? NetworkImage(recieverData['profileImage'])
                               : AssetImage('assets/images/default_avatar.png')
                                     as ImageProvider,
                         ),

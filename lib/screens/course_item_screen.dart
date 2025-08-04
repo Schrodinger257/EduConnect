@@ -92,7 +92,7 @@ class _CourseItemScreenState extends ConsumerState<CourseItemScreen> {
                             color: const Color.fromARGB(255, 196, 196, 196),
                             image: courseData['image'] != null
                                 ? DecorationImage(
-                                    image: FileImage(File(courseData['image'])),
+                                    image: NetworkImage(courseData['image']),
                                     fit: BoxFit.cover,
                                   )
                                 : null,
@@ -119,8 +119,8 @@ class _CourseItemScreenState extends ConsumerState<CourseItemScreen> {
                                         ? AssetImage(
                                             'assets/images/default_avatar.png',
                                           )
-                                        : FileImage(
-                                            File(courseCreator['profileImage']),
+                                        : NetworkImage(
+                                            courseCreator['profileImage'],
                                           ),
                                     fit: BoxFit.cover,
                                   ),

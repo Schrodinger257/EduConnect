@@ -243,8 +243,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                         ? AssetImage(
                                             'assets/images/default_avatar.png',
                                           )
-                                        : FileImage(
-                                            File(userData['profileImage']),
+                                        : NetworkImage(
+                                            userData['profileImage'],
                                           ),
                                     fit: BoxFit.cover,
                                   ),

@@ -38,7 +38,7 @@ class _CourseWidgetState extends ConsumerState<CourseWidget> {
                   color: const Color.fromARGB(255, 196, 196, 196),
                   image: widget.course['image'] != null
                       ? DecorationImage(
-                          image: FileImage(File(widget.course['image'])),
+                          image: NetworkImage(widget.course['image']),
                           fit: BoxFit.cover,
                         )
                       : null,

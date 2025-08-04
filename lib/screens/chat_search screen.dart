@@ -95,7 +95,7 @@ class _ChatSearchScreenState extends ConsumerState<ChatSearchScreen> {
                     child: TextField(
                       controller: _searchController,
                       decoration: InputDecoration(
-                        hintText: 'Search for someone',
+                        hintText: 'Enter phone number to search',
                         border: InputBorder.none,
                       ),
                     ),
@@ -129,7 +129,7 @@ class _ChatSearchScreenState extends ConsumerState<ChatSearchScreen> {
                       leading: CircleAvatar(
                         backgroundImage:
                             (user['profileImage'] != 'default_avatar')
-                            ? FileImage(File(user['profileImage']))
+                            ? NetworkImage(user['profileImage'])
                             : AssetImage('assets/images/default_avatar.png')
                                   as ImageProvider,
                       ),

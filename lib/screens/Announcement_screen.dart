@@ -101,8 +101,8 @@ class _AnnouncementScreenState extends ConsumerState<AnnouncementScreen> {
                                   image: userData['profileImage'] == null
                                       ? null
                                       : DecorationImage(
-                                          image: FileImage(
-                                            File(userData['profileImage']),
+                                          image: NetworkImage(
+                                            userData['profileImage'],
                                           ),
                                           fit: BoxFit.cover,
                                         ),

@@ -130,9 +130,7 @@ class _HomeFeedScreenState extends ConsumerState<HomeFeedScreen> {
                                       ? AssetImage(
                                           'assets/images/default_avatar.png',
                                         )
-                                      : FileImage(
-                                          File(userData['profileImage']),
-                                        ),
+                                      : NetworkImage(userData['profileImage']),
                                   fit: BoxFit.cover,
                                 ),
                               ),
@@ -228,16 +226,15 @@ class _HomeFeedScreenState extends ConsumerState<HomeFeedScreen> {
                           builder: (context, constraints) {
                             return SingleChildScrollView(
                               physics: AlwaysScrollableScrollPhysics(),
-                              child: ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  minHeight: constraints.maxHeight,
-                                ),
-                                child: Center(
-                                  child: SvgPicture.asset(
-                                    'assets/vectors/No-data-amico.svg',
-                                    height: 300,
+                              child: Column(
+                                children: [
+                                  Center(
+                                    child: SvgPicture.asset(
+                                      'assets/vectors/No-data-amico.svg',
+                                      height: 300,
+                                    ),
                                   ),
-                                ),
+                                ],
                               ),
                             );
                           },
