@@ -28,7 +28,7 @@ jobs:
     - name: Setup Flutter
       uses: subosito/flutter-action@v2
       with:
-        flutter-version: '3.24.0'
+        flutter-version: '3.27.0'
         channel: 'stable'
         
     - name: Get dependencies
@@ -45,7 +45,7 @@ jobs:
       
     - name: Sign APK
       uses: r0adkll/sign-android-release@v1
-      if: ${{ secrets.KEYSTORE_BASE64 != '' }}
+      if: ${{ env.KEYSTORE_BASE64 != '' }}
       id: sign_app
       with:
         releaseDirectory: build/app/outputs/flutter-apk
@@ -55,6 +55,7 @@ jobs:
         keyPassword: ${{ secrets.KEY_PASSWORD }}
       env:
         BUILD_TOOLS_VERSION: "30.0.3"
+        KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         
     - name: Get version from tag
       id: get_version
