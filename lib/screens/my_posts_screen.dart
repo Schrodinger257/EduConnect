@@ -38,26 +38,25 @@ class _MyPostsScreenState extends ConsumerState<MyPostsScreen> {
   }
 
   void _onScroll() {
-    final postState = ref.watch(ownPostProvider);
-    final postNotifier = ref.watch(ownPostProvider.notifier);
-    final userId = ref.watch(authProvider);
-    // 3. The core logic for fetching more posts
+    // 1. Use `ref.read` inside listeners to avoid rebuilding the widget on state change.
+    final postState = ref.read(ownPostProvider);
     if (_scrollController.position.pixels >=
-            _scrollController.position.maxScrollExtent *
-                0.9 && // Trigger slightly before the end
+            _scrollController.position.maxScrollExtent * 0.9 &&
         !postState.isLoading &&
         postState.hasMore) {
-      // Use ref.read to trigger the fetch action
-      postNotifier.getOwnPosts(userId);
+      ref
+          .read(ownPostProvider.notifier)
+          .getOwnPosts(ref.read(authProvider) as String);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final postState = ref.watch(ownPostProvider);
-    final postNotifier = ref.watch(ownPostProvider.notifier);
     final userId = ref.watch(authProvider);
-    final posts = postState.posts;
+    final posts = ref.watch(ownPostProvider.select((state) => state.posts));
+    final isLoading = ref.watch(
+      ownPostProvider.select((state) => state.isLoading),
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -66,49 +65,57 @@ class _MyPostsScreenState extends ConsumerState<MyPostsScreen> {
           style: TextStyle(color: Theme.of(context).primaryColor),
         ),
       ),
-      body: NotificationListener<ScrollNotification>(
-        onNotification: (ScrollNotification scrollinfo) {
-          if (!postState.isLoading &&
-              postState.hasMore &&
-              scrollinfo.metrics.pixels == scrollinfo.metrics.maxScrollExtent) {
-            postNotifier.getOwnPosts(userId);
-          }
-          return false;
-        },
-        child: Column(
-          children: [
-            if (posts.isEmpty && !postState.isLoading)
-              Center(
-                child: SvgPicture.asset(
-                  'assets/vectors/No-data-amico.svg',
-                  height: 300,
-                ),
-              ),
-            Expanded(
-              child: ListView.builder(
+      body: RefreshIndicator(
+        // 3. Add the onRefresh callback.
+        // This assumes you have a `refreshOwnPosts` method in your provider.
+        onRefresh: () =>
+            ref.read(ownPostProvider.notifier).refreshOwnPosts(userId),
+        child: (posts.isEmpty && !isLoading)
+            // 4. Handle the empty state correctly to allow pull-to-refresh.
+            ? LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
+                      ),
+                      child: Center(
+                        child: SvgPicture.asset(
+                          'assets/vectors/No-data-amico.svg',
+                          height: 300,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              )
+            // 5. The ListView for when there are posts.
+            : ListView.builder(
                 controller: _scrollController,
-                itemCount: posts.length + (postState.isLoading ? 1 : 0),
+                itemCount: posts.length + (isLoading ? 1 : 0),
                 itemBuilder: (ctx, index) {
-                  if (index == posts.length && postState.isLoading) {
-                    return Center(
+                  if (index >= posts.length) {
+                    // This is the loading indicator at the bottom of the list.
+                    return const Center(
                       child: Padding(
-                        padding: const EdgeInsets.all(16.0),
+                        padding: EdgeInsets.all(16.0),
                         child: CircularProgressIndicator(),
                       ),
                     );
                   }
 
                   final post = posts[index];
+                  // 6. Add a ValueKey for performance.
                   return PostWidget(
+                    key: ValueKey(post['id']),
                     post: post,
                     userId: post['userid'],
                     postID: post['id'],
+                    isMyPostScreen: true,
                   );
                 },
               ),
-            ),
-          ],
-        ),
       ),
     );
   }

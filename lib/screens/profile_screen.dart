@@ -189,7 +189,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ref.read(profileProvider.notifier).user =
             userData; // Assign to the state variable
 
-        print(userData);
         return Scaffold(
           body: SingleChildScrollView(
             child: Column(
@@ -218,6 +217,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           ref
                               .watch(profileProvider.notifier)
                               .setProfileImage(context, userID);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Profile image updated successfully!',
+                              ),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
                         },
                         child: Container(
                           width: width * 0.95,

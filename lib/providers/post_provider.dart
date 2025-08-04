@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 class PostsState {
   final List<Map<String, dynamic>> posts;
   final bool isLoading;
@@ -37,8 +39,9 @@ class PostsState {
 }
 
 class PostProvider extends StateNotifier<PostsState> {
-  PostProvider() : super(PostsState());
+  PostProvider(this.ref) : super(PostsState());
   Map<String, dynamic> mainUser = {};
+  final Ref ref;
 
   Future<void> toggleBookmark(
     String userId,
@@ -121,7 +124,7 @@ class PostProvider extends StateNotifier<PostsState> {
     }
   }
 
-  void deletePost(BuildContext context, String postId) async {
+  void deletePost(BuildContext context, String postId, String userId) async {
     try {
       await FirebaseFirestore.instance.collection('posts').doc(postId).delete();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -130,6 +133,8 @@ class PostProvider extends StateNotifier<PostsState> {
           backgroundColor: Colors.green,
         ),
       );
+      refreshPosts();
+      ref.read(ownPostProvider.notifier).refreshOwnPosts(userId);
     } catch (error) {
       print('Error deleting post: $error');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -264,6 +269,7 @@ class PostProvider extends StateNotifier<PostsState> {
     final ImagePicker _picker = ImagePicker();
     File? selectedImage;
     bool enableTag = false;
+    late String imageUrl;
 
     void _submitForm() async {
       _formKey.currentState!.save();
@@ -276,8 +282,7 @@ class PostProvider extends StateNotifier<PostsState> {
             .collection('posts')
             .add({
               'content': postContent,
-              'image':
-                  selectedImage?.path ?? null, // Placeholder for image path
+              'image': imageUrl ?? null, // Placeholder for image path
               'likes': [],
               'userid': userId,
               'tags': tags.toList(),
@@ -328,8 +333,8 @@ class PostProvider extends StateNotifier<PostsState> {
                                   image: user['profileImage'] == null
                                       ? null
                                       : DecorationImage(
-                                          image: FileImage(
-                                            File(user['profileImage']),
+                                          image: NetworkImage(
+                                            user['profileImage'],
                                           ),
                                           fit: BoxFit.cover,
                                         ),
@@ -498,6 +503,21 @@ class PostProvider extends StateNotifier<PostsState> {
                                     setState(() {
                                       selectedImage = File(image.path);
                                     });
+                                    await Supabase.instance.client.storage
+                                        .from('posts')
+                                        .remove(['${userId}.png']);
+                                    await Supabase.instance.client.storage
+                                        .from('posts')
+                                        .upload(
+                                          '${userId}?${DateTime.now().millisecondsSinceEpoch}.png',
+                                          selectedImage!,
+                                          fileOptions: FileOptions(
+                                            upsert: true,
+                                          ),
+                                        );
+                                    imageUrl = Supabase.instance.client.storage
+                                        .from('posts')
+                                        .getPublicUrl('${userId}.png');
                                   }
                                 },
 
@@ -617,7 +637,7 @@ class PostProvider extends StateNotifier<PostsState> {
 }
 
 final postProvider = StateNotifierProvider<PostProvider, PostsState>((ref) {
-  return PostProvider();
+  return PostProvider(ref);
 });
 
 class OwnPostProvider extends StateNotifier<PostsState> {

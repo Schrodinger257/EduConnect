@@ -47,9 +47,6 @@ class ProfileProvider extends StateNotifier<Map<String, dynamic>> {
                   );
                   if (image != null) {
                     selectedImage = File(image.path);
-                    print(
-                      '####################################################################Image choosen successfully',
-                    );
                     await Supabase.instance.client.storage
                         .from('avatars')
                         .remove(['${userid}.png']);
@@ -60,28 +57,19 @@ class ProfileProvider extends StateNotifier<Map<String, dynamic>> {
                           selectedImage!,
                           fileOptions: FileOptions(upsert: true),
                         );
-                    print(
-                      '####################################################################Image uploaded successfully',
-                    );
                     final imageUrl = Supabase.instance.client.storage
                         .from('avatars')
                         .getPublicUrl('${userid}.png');
-                    print(
-                      '####################################################################Image url retrieved successfully',
-                    );
-                    print(imageUrl);
-
-                    await FirebaseFirestore.instance
+                    final uniqueImageUrl =
+                        '$imageUrl?${DateTime.now().millisecondsSinceEpoch}';
+                    FirebaseFirestore.instance
                         .collection('users')
                         .doc(userid)
-                        .update({'profileImage': imageUrl});
-                    state = {...state, 'profileImage': imageUrl};
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Profile image updated successfully!'),
-                        backgroundColor: Colors.green,
-                      ),
+                        .update({'profileImage': uniqueImageUrl});
+                    print(
+                      '####################################################################Image updated successfully',
                     );
+                    state = {...state, 'profileImage': imageUrl};
                   }
                 },
               ),
@@ -96,39 +84,26 @@ class ProfileProvider extends StateNotifier<Map<String, dynamic>> {
                   );
                   if (image != null) {
                     selectedImage = File(image.path);
-                    print(
-                      '####################################################################Image choosen successfully',
-                    );
-
                     await Supabase.instance.client.storage
                         .from('avatars')
-                        .remove(['$userid.png']);
-                    print(
-                      '####################################################################Image removed successfully',
-                    );
+                        .remove(['${userid}.png']);
                     await Supabase.instance.client.storage
                         .from('avatars')
                         .upload(
-                          '$userid.png',
+                          '${userid}.png',
                           selectedImage!,
                           fileOptions: FileOptions(upsert: true),
                         );
                     final imageUrl = Supabase.instance.client.storage
                         .from('avatars')
-                        .getPublicUrl('$userid.png');
+                        .getPublicUrl('${userid}.png');
+                    final uniqueImageUrl =
+                        '$imageUrl?${DateTime.now().millisecondsSinceEpoch}';
                     await FirebaseFirestore.instance
                         .collection('users')
                         .doc(userid)
                         .update({'profileImage': imageUrl});
-                    state = {...state, 'profileImage': imageUrl};
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Profile image updated successfully!'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                    }
+                    state = {...state, 'profileImage': uniqueImageUrl};
                   }
                 },
               ),

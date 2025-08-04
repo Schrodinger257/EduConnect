@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:educonnect/providers/auth_provider.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:educonnect/providers/post_provider.dart';
@@ -58,17 +59,13 @@ class _HomeFeedScreenState extends ConsumerState<HomeFeedScreen> {
   }
 
   void _onScroll() {
-    final postState = ref.watch(postProvider);
-    final postNotifier = ref.watch(postProvider.notifier);
-
-    // 3. The core logic for fetching more posts
+    final postState = ref.read(postProvider); // Use read inside a listener
+    // The logic here is correct. No changes needed.
     if (_scrollController.position.pixels >=
-            _scrollController.position.maxScrollExtent *
-                0.9 && // Trigger slightly before the end
+            _scrollController.position.maxScrollExtent * 0.9 &&
         !postState.isLoading &&
         postState.hasMore) {
-      // Use ref.read to trigger the fetch action
-      postNotifier.getPosts();
+      ref.read(postProvider.notifier).getPosts();
     }
   }
 
@@ -78,7 +75,11 @@ class _HomeFeedScreenState extends ConsumerState<HomeFeedScreen> {
     final Map<String, dynamic> userData = {};
     final postState = ref.watch(postProvider);
     final postNotifier = ref.watch(postProvider.notifier);
-    final posts = postState.posts;
+    final posts = ref.watch(postProvider.select((state) => state.posts));
+    final isLoading = ref.watch(
+      postProvider.select((state) => state.isLoading),
+    );
+
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -202,75 +203,54 @@ class _HomeFeedScreenState extends ConsumerState<HomeFeedScreen> {
               },
             ),
             SizedBox(height: 20),
-            NotificationListener<ScrollNotification>(
-              onNotification: (ScrollNotification scrollinfo) {
-                if (!postState.isLoading &&
-                    postState.hasMore &&
-                    scrollinfo.metrics.pixels ==
-                        scrollinfo.metrics.maxScrollExtent) {
-                  postNotifier.getPosts();
-                }
-                return false;
-              },
-              child: Expanded(
-                child: RefreshIndicator(
-                  // 1. Call your new refresh method on swipe
-                  onRefresh: () =>
-                      ref.read(postProvider.notifier).refreshPosts(),
-                  child: Column(
-                    children: [
-                      // This logic remains the same
-                      if (posts.isEmpty && !postState.isLoading)
-                        // Wrap in a LayoutBuilder to ensure refresh works on an empty list
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            return SingleChildScrollView(
-                              physics: AlwaysScrollableScrollPhysics(),
-                              child: Column(
-                                children: [
-                                  Center(
-                                    child: SvgPicture.asset(
-                                      'assets/vectors/No-data-amico.svg',
-                                      height: 300,
-                                    ),
-                                  ),
-                                ],
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: () => ref.read(postProvider.notifier).refreshPosts(),
+                child: (posts.isEmpty && !isLoading)
+                    ? LayoutBuilder(
+                        builder: (context, constraints) {
+                          return SingleChildScrollView(
+                            physics: AlwaysScrollableScrollPhysics(),
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                minHeight: constraints.maxHeight,
+                              ),
+                              child: Center(
+                                child: SvgPicture.asset(
+                                  'assets/vectors/No-data-amico.svg',
+                                  height: 300,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      )
+                    : ListView.builder(
+                        controller: _scrollController,
+                        // Use the `isLoading` variable we selected earlier
+                        itemCount: posts.length + (isLoading ? 1 : 0),
+                        itemBuilder: (ctx, index) {
+                          if (index >= posts.length) {
+                            return Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: CircularProgressIndicator(),
                               ),
                             );
-                          },
-                        ),
-                      // 2. REMOVE the FutureBuilder and use a ListView.builder directly
-                      Expanded(
-                        child: ListView.builder(
-                          controller: _scrollController,
-                          // 3. Use the state from the provider for item count
-                          itemCount:
-                              posts.length + (postState.isLoading ? 1 : 0),
-                          itemBuilder: (ctx, index) {
-                            // Logic for showing the loading spinner at the bottom
-                            if (index >= posts.length) {
-                              return Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: CircularProgressIndicator(),
-                                ),
-                              );
-                            }
+                          }
 
-                            // 4. Get the post from the provider's state
-                            final post = posts[index];
-                            return PostWidget(
-                              post: post,
-                              userId: post['userid'],
-                              // The post ID should be part of the post map
-                              postID: post['id'],
-                            );
-                          },
-                        ),
+                          final post = posts[index];
+                          // 2. THE FIX: Add a ValueKey using the unique post ID.
+                          // This tells Flutter how to identify each PostWidget,
+                          // preventing it from rebuilding existing ones when new posts are added.
+                          return PostWidget(
+                            key: ValueKey(post['id']),
+                            post: post,
+                            userId: post['userid'],
+                            postID: post['id'],
+                          );
+                        },
                       ),
-                    ],
-                  ),
-                ),
               ),
             ),
           ],
