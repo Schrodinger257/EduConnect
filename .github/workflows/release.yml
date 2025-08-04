@@ -34,7 +34,14 @@ jobs:
       run: flutter pub get
       
     - name: Run tests
-      run: flutter test
+      run: |
+        echo "🧪 Running tests before release..."
+        if flutter test; then
+          echo "✅ All tests passed - proceeding with release"
+        else
+          echo "❌ Tests failed - stopping release build"
+          exit 1
+        fi
       
     - name: Build APK
       run: flutter build apk --release
