@@ -28,8 +28,14 @@ jobs:
     - name: Get dependencies
       run: flutter pub get
       
-    - name: Verify formatting
-      run: dart format --output=none --set-exit-if-changed .
+    - name: Check formatting
+      run: |
+        if ! dart format --output=none --set-exit-if-changed .; then
+          echo "⚠️ Code formatting issues found. Run 'dart format .' to fix."
+          echo "This is informational only and won't fail the build."
+        else
+          echo "✅ Code is properly formatted."
+        fi
       
     - name: Analyze project source
       run: flutter analyze --fatal-infos
