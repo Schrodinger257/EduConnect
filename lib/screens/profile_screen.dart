@@ -4,10 +4,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:educonnect/screens/bookmarks_screen.dart';
 import 'package:educonnect/screens/my_announcement_screen.dart';
 import 'package:educonnect/screens/my_posts_screen.dart';
+import 'package:educonnect/screens/profile_edit_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:educonnect/providers/auth_provider.dart';
 import 'package:educonnect/providers/profile_provider.dart';
+import 'package:educonnect/modules/user.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -259,13 +261,38 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               ),
                               IconButton(
                                 onPressed: () {
-                                  ref
-                                      .read(profileProvider.notifier)
-                                      .updateUserProfile(
-                                        userID,
-                                        userData,
-                                        context,
-                                      );
+                                  // Convert userData to User object
+                                  try {
+                                    final user = User(
+                                      id: userID,
+                                      email: userData['email'] ?? '',
+                                      name: userData['name'] ?? '',
+                                      role: UserRole.fromString(userData['roleCode'] ?? 'student'),
+                                      profileImage: userData['profileImage'],
+                                      department: userData['department'],
+                                      fieldOfExpertise: userData['fieldofexpertise'],
+                                      grade: userData['grade'],
+                                      createdAt: userData['createdAt'] is Timestamp 
+                                          ? (userData['createdAt'] as Timestamp).toDate()
+                                          : DateTime.now(),
+                                      bookmarks: List<String>.from(userData['Bookmarks'] ?? []),
+                                      likedPosts: List<String>.from(userData['likedPosts'] ?? []),
+                                      enrolledCourses: List<String>.from(userData['enrolledCourses'] ?? []),
+                                    );
+                                    
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (context) => ProfileEditScreen(user: user),
+                                      ),
+                                    );
+                                  } catch (e) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Error loading profile data: ${e.toString()}'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
                                 },
                                 icon: Icon(
                                   Icons.edit,
