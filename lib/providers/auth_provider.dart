@@ -1,6 +1,8 @@
 import 'package:educonnect/modules/user.dart';
+import 'package:educonnect/repositories/user_repository.dart';
 import 'package:educonnect/screens/auth_screen.dart';
 import 'package:educonnect/screens/main_screen.dart';
+import 'package:educonnect/services/navigation_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -196,17 +198,17 @@ final authScreenProvider = StateNotifierProvider<AuthScreenProvider, AuthScreenS
 
 /// State for authentication management
 class AuthState {
-  final String? userId;
-  final User? user;
+  final String userId;
+  final User user;
   final bool isLoading;
-  final String? error;
+  final String error;
   final bool isAuthenticated;
 
   const AuthState({
-    this.userId,
-    this.user,
+    required this.userId,
+    required this.user,
     this.isLoading = false,
-    this.error,
+    this.error = '',
     this.isAuthenticated = false,
   });
 
