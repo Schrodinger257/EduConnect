@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:educonnect/providers/post_provider.dart';
 import 'package:educonnect/widgets/post.dart';
+import 'package:educonnect/screens/search_screen.dart';
 import 'dart:io';
 
 import 'package:flutter_svg/svg.dart';
@@ -81,6 +82,26 @@ class _HomeFeedScreenState extends ConsumerState<HomeFeedScreen> {
     );
 
     return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Home Feed',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const SearchScreen(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Column(
           children: [

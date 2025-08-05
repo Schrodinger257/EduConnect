@@ -35,6 +35,7 @@ dependencies:
 
   # Utilities
   intl: ^0.20.2                    # Internationalization and localization support
+  shared_preferences: ^2.3.2       # Local storage for user preferences and cache
 
 dev_dependencies:
   flutter_test:
