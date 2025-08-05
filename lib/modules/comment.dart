@@ -263,6 +263,6 @@ class Comment {
 
   @override
   String toString() {
-    return 'Comment(id: $id, postId: $postId, userId: $userId, content: ${contentPreview}${isEdited ? ' (edited)' : ''})';
+    return 'Comment(id: $id, postId: $postId, userId: $userId, content: $contentPreview${isEdited ? ' (edited)' : ''})';
   }
 }

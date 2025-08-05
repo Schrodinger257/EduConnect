@@ -1,9 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../core/result.dart';
 import '../core/logger.dart';
 import '../modules/comment.dart';
 import '../repositories/post_repository.dart';
-import '../repositories/firebase_post_repository.dart';
 import '../services/navigation_service.dart';
 import 'providers.dart';
 
@@ -79,7 +77,7 @@ class CommentProvider extends StateNotifier<CommentsState> {
           _setLoadingForPost(postId, false);
         },
         error: (message, exception) {
-          _logger.error('Error loading comments for post $postId: $message', exception);
+          _logger.error('Error loading comments for post $postId: $message', error: exception);
           _setErrorForPost(postId, message);
           _setLoadingForPost(postId, false);
         },
@@ -117,7 +115,7 @@ class CommentProvider extends StateNotifier<CommentsState> {
           _navigationService.showSuccessSnackBar('Comment added successfully');
         },
         error: (message, exception) {
-          _logger.error('Error adding comment: $message', exception);
+          _logger.error('Error adding comment: $message', error: exception);
           _navigationService.showErrorSnackBar('Failed to add comment: $message');
         },
       );
@@ -144,7 +142,7 @@ class CommentProvider extends StateNotifier<CommentsState> {
           _navigationService.showSuccessSnackBar(message);
         },
         error: (message, exception) {
-          _logger.error('Error deleting comment: $message', exception);
+          _logger.error('Error deleting comment: $message', error: exception);
           _navigationService.showErrorSnackBar('Failed to delete comment: $message');
         },
       );
@@ -196,7 +194,7 @@ class CommentProvider extends StateNotifier<CommentsState> {
           _navigationService.showSuccessSnackBar('Comment updated successfully');
         },
         error: (message, exception) {
-          _logger.error('Error updating comment: $message', exception);
+          _logger.error('Error updating comment: $message', error: exception);
           _navigationService.showErrorSnackBar('Failed to update comment: $message');
         },
       );

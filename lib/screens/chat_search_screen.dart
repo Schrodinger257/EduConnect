@@ -1,4 +1,3 @@
-import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:educonnect/providers/auth_provider.dart';
@@ -7,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class ChatSearchScreen extends ConsumerStatefulWidget {
-  ChatSearchScreen({super.key});
+  const ChatSearchScreen({super.key});
 
   @override
   ConsumerState<ChatSearchScreen> createState() => _ChatSearchScreenState();
@@ -43,7 +42,7 @@ class _ChatSearchScreenState extends ConsumerState<ChatSearchScreen> {
     await FirebaseFirestore.instance
         .collection('users')
         .where('phone', isGreaterThanOrEqualTo: _searchQuery.trim())
-        .where('phone', isLessThanOrEqualTo: _searchQuery.trim() + '\uf8ff')
+        .where('phone', isLessThanOrEqualTo: '${_searchQuery.trim()}\uf8ff')
         .get()
         .then((snapshot) {
           if (snapshot.docs.isNotEmpty) {
@@ -68,7 +67,16 @@ class _ChatSearchScreenState extends ConsumerState<ChatSearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final String myUserId = ref.watch(authProvider) as String;
+    final authState = ref.watch(authProvider);
+    final myUserId = authState.userId;
+    
+    if (myUserId == null) {
+      return const Scaffold(
+        body: Center(
+          child: Text('Please log in to access chat'),
+        ),
+      );
+    }
     return Scaffold(
       body: SafeArea(
         child: Column(

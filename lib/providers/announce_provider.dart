@@ -107,7 +107,7 @@ class AnnounceProvider extends StateNotifier {
         .snapshots()
         .map((snapShot) {
           return snapShot.docs.map((doc) {
-            return {...doc.data() as Map<String, dynamic>, 'id': doc.id};
+            return {...doc.data(), 'id': doc.id};
           }).toList();
         });
   }
@@ -120,29 +120,29 @@ class AnnounceProvider extends StateNotifier {
         .snapshots()
         .map((snapShot) {
           return snapShot.docs.map((doc) {
-            return {...doc.data() as Map<String, dynamic>, 'id': doc.id};
+            return {...doc.data(), 'id': doc.id};
           }).toList();
         });
   }
 
   Set<String> tags = {};
 
-  createPost(
+  void createPost(
     BuildContext context, {
     required Map<String, dynamic> user,
     required String userId,
   }) {
-    final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+    final GlobalKey<FormState> formKey = GlobalKey<FormState>();
     String postContent = '';
     List<String> tagItems = [];
-    final ImagePicker _picker = ImagePicker();
+    final ImagePicker picker = ImagePicker();
     File? selectedImage;
     bool enableTag = false;
 
-    void _submitForm() async {
-      _formKey.currentState!.save();
+    void submitForm() async {
+      formKey.currentState!.save();
       if (postContent.isEmpty && selectedImage == null) {
-        _formKey.currentState!.validate();
+        formKey.currentState!.validate();
         return;
       }
       if (postContent.isNotEmpty || selectedImage != null) {
@@ -151,7 +151,7 @@ class AnnounceProvider extends StateNotifier {
             .add({
               'content': postContent,
               'image':
-                  selectedImage?.path ?? null, // Placeholder for image path
+                  selectedImage?.path, // Placeholder for image path
               'userid': userId,
               'tags': tags.toList(),
               'timestamp': FieldValue.serverTimestamp(),
@@ -226,7 +226,7 @@ class AnnounceProvider extends StateNotifier {
                     ),
 
                     Form(
-                      key: _formKey,
+                      key: formKey,
                       child: Column(
                         children: [
                           SizedBox(
@@ -336,7 +336,7 @@ class AnnounceProvider extends StateNotifier {
                                   children: [
                                     TextButton(
                                       onPressed: () {
-                                        _formKey.currentState!.save();
+                                        formKey.currentState!.save();
                                         tags.clear();
                                         print(tagItems);
                                         setState(() {
@@ -362,7 +362,7 @@ class AnnounceProvider extends StateNotifier {
                             children: [
                               GestureDetector(
                                 onTap: () async {
-                                  final XFile? image = await _picker.pickImage(
+                                  final XFile? image = await picker.pickImage(
                                     source: ImageSource.gallery,
                                     imageQuality: 80,
                                   );
@@ -390,7 +390,7 @@ class AnnounceProvider extends StateNotifier {
                                   ),
                                 ),
                                 onTap: () async {
-                                  final XFile? image = await _picker.pickImage(
+                                  final XFile? image = await picker.pickImage(
                                     source: ImageSource.camera,
                                     imageQuality: 80,
                                   );
@@ -466,7 +466,7 @@ class AnnounceProvider extends StateNotifier {
                                   ),
                                   onPressed: () {
                                     // Handle post creation
-                                    _submitForm();
+                                    submitForm();
                                   },
                                   child: Text('Create Post'),
                                 ),

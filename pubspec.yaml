@@ -32,6 +32,9 @@ dependencies:
   # Media & Storage
   image_picker: ^1.0.4             # Image selection from gallery and camera
   sqflite: ^2.4.2                  # Local SQLite database for offline functionality
+  file_picker: ^8.1.2              # File selection for various file types
+  path: ^1.9.0                     # Path manipulation utilities
+  mime: ^2.0.0                     # MIME type detection for files
 
   # Utilities
   intl: ^0.20.2                    # Internationalization and localization support

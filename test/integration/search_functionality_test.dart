@@ -2,10 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../lib/services/search_service.dart';
-import '../../lib/modules/post.dart';
-import '../../lib/modules/course.dart';
-import '../../lib/modules/user.dart';
+import 'package:educonnect/services/search_service.dart';
+import 'package:educonnect/modules/post.dart';
+import 'package:educonnect/modules/course.dart';
 
 // Generate mocks
 @GenerateMocks([FirebaseFirestore, CollectionReference, Query, QuerySnapshot, QueryDocumentSnapshot])

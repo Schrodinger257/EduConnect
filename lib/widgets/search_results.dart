@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/search_service.dart';
-import '../widgets/post.dart';
-import '../widgets/course.dart';
 import '../widgets/search_user_card.dart';
 import '../widgets/highlighted_text.dart';
 import '../modules/post.dart';
 import '../modules/course.dart';
-import '../modules/user.dart';
 import '../screens/course_item_screen.dart';
 import '../screens/comments_screen.dart';
 

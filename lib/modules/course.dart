@@ -309,6 +309,9 @@ class Course {
   /// Checks if the course is full
   bool get isFull => enrolledStudents.length >= maxEnrollment;
 
+  /// Checks if the course is nearly full (80% capacity)
+  bool get isNearlyFull => enrollmentPercentage >= 80.0;
+
   /// Checks if the course has available spots
   bool get hasAvailableSpots => enrolledStudents.length < maxEnrollment;
 

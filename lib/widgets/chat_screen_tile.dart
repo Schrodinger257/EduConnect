@@ -54,14 +54,14 @@ class ChatScreenTile extends ConsumerWidget {
             ),
           ),
           subtitle: Text(
-            '${chat['lastSender'] == ref.read(authProvider) ? 'You:' : ''} ${chat['lastMessage']}',
+            '${chat['lastSender'] == ref.read(authProvider).userId ? 'You:' : ''} ${chat['lastMessage']}',
             style: TextStyle(
               color: Theme.of(context).shadowColor.withAlpha(150),
             ),
           ),
           trailing: Text(
             (chat['lastMessageTime'] != '' || chat['lastMessageTime'] != null)
-                ? '${DateFormat.yMd().add_jm().format(DateTime.fromMillisecondsSinceEpoch(chat['lastMessageTime'].millisecondsSinceEpoch).toLocal())}'
+                ? DateFormat.yMd().add_jm().format(DateTime.fromMillisecondsSinceEpoch(chat['lastMessageTime'].millisecondsSinceEpoch).toLocal())
                 : '',
           ),
           onTap: () {

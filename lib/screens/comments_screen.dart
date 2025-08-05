@@ -17,7 +17,8 @@ class StreamCommentsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final currentUserId = ref.watch(authProvider) as String?;
+    final authState = ref.watch(authProvider);
+    final currentUserId = authState.userId;
     
     if (currentUserId == null) {
       return Scaffold(

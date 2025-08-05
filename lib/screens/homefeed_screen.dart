@@ -1,12 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:educonnect/providers/auth_provider.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:educonnect/providers/post_provider.dart';
 import 'package:educonnect/widgets/post.dart';
 import 'package:educonnect/screens/search_screen.dart';
-import 'dart:io';
 
 import 'package:flutter_svg/svg.dart';
 
@@ -72,10 +70,19 @@ class _HomeFeedScreenState extends ConsumerState<HomeFeedScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final userID = ref.watch(authProvider);
+    final authState = ref.watch(authProvider);
+    final userID = authState.userId;
+    
+    if (userID == null) {
+      return const Scaffold(
+        body: Center(
+          child: Text('Please log in to access this screen'),
+        ),
+      );
+    }
+    
     final Map<String, dynamic> userData = {};
     final postState = ref.watch(postProvider);
-    final postNotifier = ref.watch(postProvider.notifier);
     final posts = ref.watch(postProvider.select((state) => state.posts));
     final isLoading = ref.watch(
       postProvider.select((state) => state.isLoading),
@@ -145,25 +152,27 @@ class _HomeFeedScreenState extends ConsumerState<HomeFeedScreen> {
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: Theme.of(context).shadowColor,
-                                image: DecorationImage(
-                                  image:
-                                      userData['profileImage'] ==
-                                          'default_avatar'
-                                      ? AssetImage(
+                                image: userData['profileImage'] != null &&
+                                        userData['profileImage'] != 'default_avatar'
+                                    ? DecorationImage(
+                                        image: NetworkImage(userData['profileImage']),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : DecorationImage(
+                                        image: AssetImage(
                                           'assets/images/default_avatar.png',
-                                        )
-                                      : NetworkImage(userData['profileImage']),
-                                  fit: BoxFit.cover,
-                                ),
+                                        ),
+                                        fit: BoxFit.cover,
+                                      ),
                               ),
                             ),
                             SizedBox(width: 10),
-                            SizedBox(
+                            Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    userData['name'],
+                                    userData['name'] ?? 'Unknown User',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       color: Theme.of(context).shadowColor,
@@ -173,12 +182,13 @@ class _HomeFeedScreenState extends ConsumerState<HomeFeedScreen> {
                                   Wrap(
                                     direction: Axis.horizontal,
                                     children: [
-                                      _tag(context, userData['roleCode']),
+                                      _tag(context, userData['roleCode'] ?? 'user'),
                                       if (userData['roleCode'] == 'student' &&
+                                          userData['grade'] != null &&
                                           userData['grade'] != 'None')
                                         _tag(context, userData['grade']),
-                                      if (userData['roleCode'] ==
-                                              'instructor' &&
+                                      if (userData['roleCode'] == 'instructor' &&
+                                          userData['fieldofexpertise'] != null &&
                                           userData['fieldofexpertise'] !=
                                               'Not Assigned Yet')
                                         _tag(
@@ -202,12 +212,7 @@ class _HomeFeedScreenState extends ConsumerState<HomeFeedScreen> {
                                 elevation: 0,
                               ),
                               onPressed: () {
-                                postNotifier.tags.clear();
-                                postNotifier.createPost(
-                                  context,
-                                  user: userData,
-                                  userId: userID,
-                                );
+                                ref.read(postProvider.notifier).showCreatePostModal(context, userID);
                               },
                               label: Text(
                                 'Create Post',

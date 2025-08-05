@@ -8,7 +8,7 @@ import 'package:easy_image_viewer/easy_image_viewer.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class AnnouncementWidget extends ConsumerStatefulWidget {
-  AnnouncementWidget({
+  const AnnouncementWidget({
     super.key,
     required this.post,
     required this.userId,
@@ -47,6 +47,19 @@ class _AnnouncementWidgetState extends ConsumerState<AnnouncementWidget> {
   @override
   Widget build(BuildContext context) {
     final Map<String, dynamic> userData = {};
+
+    // Check if userId is valid before using it
+    if (widget.userId.isEmpty) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            'Error: Invalid announcement data - missing user ID',
+            style: TextStyle(color: Colors.red),
+          ),
+        ),
+      );
+    }
 
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance
@@ -92,7 +105,10 @@ class _AnnouncementWidgetState extends ConsumerState<AnnouncementWidget> {
       );
     }
 
-    userData.addAll(snapShot.data!.data() as Map<String, dynamic>);
+    final data = snapShot.data!.data();
+    if (data != null) {
+      userData.addAll(data as Map<String, dynamic>);
+    }
 
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -117,7 +133,8 @@ class _AnnouncementWidgetState extends ConsumerState<AnnouncementWidget> {
                           shape: BoxShape.circle,
                           color: Theme.of(context).shadowColor,
                           image: DecorationImage(
-                            image: userData['profileImage'] == 'default_avatar'
+                            image: (userData['profileImage'] == null || 
+                                   userData['profileImage'] == 'default_avatar')
                                 ? AssetImage('assets/images/default_avatar.png')
                                 : NetworkImage(userData['profileImage']),
                             fit: BoxFit.cover,
@@ -127,7 +144,7 @@ class _AnnouncementWidgetState extends ConsumerState<AnnouncementWidget> {
                       SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          userData['name'],
+                          userData['name'] ?? 'Unknown User',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Theme.of(context).shadowColor,
@@ -187,22 +204,54 @@ class _AnnouncementWidgetState extends ConsumerState<AnnouncementWidget> {
               ),
             ),
             SizedBox(height: 5),
-            if (widget.post['image'] != null)
+            if (widget.post['image'] != null && widget.post['image'].toString().isNotEmpty)
               GestureDetector(
                 onTap: () {
-                  showImageViewer(
-                    context,
-                    Image.file(File(widget.post['image'])).image,
-                    useSafeArea: true,
-                    doubleTapZoomable: true,
-                    closeButtonColor: Theme.of(context).primaryColor,
-                    swipeDismissible: true,
-                  );
+                  final imagePath = widget.post['image'].toString();
+                  // Check if it's a network URL or local file path
+                  if (imagePath.startsWith('http')) {
+                    showImageViewer(
+                      context,
+                      Image.network(imagePath).image,
+                      useSafeArea: true,
+                      doubleTapZoomable: true,
+                      closeButtonColor: Theme.of(context).primaryColor,
+                      swipeDismissible: true,
+                    );
+                  } else {
+                    showImageViewer(
+                      context,
+                      Image.file(File(imagePath)).image,
+                      useSafeArea: true,
+                      doubleTapZoomable: true,
+                      closeButtonColor: Theme.of(context).primaryColor,
+                      swipeDismissible: true,
+                    );
+                  }
                 },
-                child: Image.file(
-                  File(widget.post['image']),
-                  fit: BoxFit.cover,
-                ),
+                child: widget.post['image'].toString().startsWith('http')
+                    ? Image.network(
+                        widget.post['image'],
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            height: 200,
+                            color: Colors.grey[300],
+                            child: Icon(Icons.error, color: Colors.red),
+                          );
+                        },
+                      )
+                    : Image.file(
+                        File(widget.post['image']),
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            height: 200,
+                            color: Colors.grey[300],
+                            child: Icon(Icons.error, color: Colors.red),
+                          );
+                        },
+                      ),
               ),
             SizedBox(height: 20),
           ],

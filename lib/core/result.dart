@@ -33,6 +33,9 @@ sealed class Result<T> {
     Error<T> error => error.exception,
   };
 
+  /// Returns the error (for backward compatibility)
+  String? get error => errorMessage;
+
   /// Executes the appropriate callback based on the result type
   R when<R>({
     required R Function(T data) success,
@@ -79,6 +82,7 @@ sealed class Result<T> {
 
 /// Represents a successful result containing data
 final class Success<T> extends Result<T> {
+  @override
   final T data;
   
   const Success(this.data);
@@ -98,6 +102,7 @@ final class Success<T> extends Result<T> {
 /// Represents a failed result containing an error message and optional exception
 final class Error<T> extends Result<T> {
   final String message;
+  @override
   final Exception? exception;
   
   const Error(this.message, [this.exception]);

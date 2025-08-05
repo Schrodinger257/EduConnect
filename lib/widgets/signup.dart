@@ -18,15 +18,15 @@ class _SignupWidgetState extends ConsumerState<SignupWidget> {
   String _name = '';
   String? _roleCode = '';
 
-  String _defineRoleCode(String? roleCode) {
+  UserRole _defineRoleCode(String? roleCode) {
     if (roleCode == null || roleCode.isEmpty) {
-      return 'student';
+      return UserRole.student;
     } else if (roleCode == 'instructor') {
-      return 'instructor';
+      return UserRole.instructor;
     } else if (roleCode == 'admin') {
-      return 'admin';
+      return UserRole.admin;
     } else {
-      return 'unknown';
+      return UserRole.student; // Default fallback
     }
   }
 
@@ -52,13 +52,14 @@ class _SignupWidgetState extends ConsumerState<SignupWidget> {
     _formKey.currentState!.save();
     _formKey.currentState!.validate();
     if (_formKey.currentState!.validate()) {
-      UserClass user = UserClass(
+      User user = User(
+        id: '', // Will be set by Firebase Auth
         email: _email,
-        password: _password,
         name: _name,
-        roleCode: _defineRoleCode(_roleCode),
+        role: _defineRoleCode(_roleCode),
+        createdAt: DateTime.now(),
       );
-      await ref.read(authProvider.notifier).signup(user, context);
+      await ref.read(authProvider.notifier).signup(user, _password);
       ref.read(screenProvider.notifier).setScreen(2);
     }
   }
@@ -75,9 +76,9 @@ class _SignupWidgetState extends ConsumerState<SignupWidget> {
             children: [
               Column(
                 children: [
-                  Container(
-                    child: SvgPicture.asset('assets/vectors/pana.svg'),
+                  SizedBox(
                     height: 200,
+                    child: SvgPicture.asset('assets/vectors/pana.svg'),
                   ),
                   Form(
                     key: _formKey,

@@ -2,11 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:educonnect/providers/auth_provider.dart';
 import 'package:educonnect/providers/profile_provider.dart';
 import 'package:educonnect/widgets/message_bubble.dart';
+import 'package:educonnect/modules/message.dart';
+import 'package:educonnect/modules/user.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class ChatMessageScreen extends ConsumerStatefulWidget {
-  ChatMessageScreen({
+  const ChatMessageScreen({
     super.key,
     required this.chatId,
     required this.receiver,
@@ -28,36 +30,20 @@ class _ChatMessageScreenState extends ConsumerState<ChatMessageScreen> {
 
   @override
   void dispose() {
-    // TODO: implement dispose
     _messageController.dispose();
     super.dispose();
-  }
-
-  void _sendMessage({required String userId}) {
-    if (message.isEmpty) return;
-
-    FirebaseFirestore.instance
-        .collection('chats')
-        .doc(widget.chatId)
-        .collection('messages')
-        .add({
-          'text': message,
-          'senderId': userId,
-          'timestamp': Timestamp.now(),
-          'userImage': ref
-              .read(authProvider.notifier)
-              .userData['profileImage'], // Assuming userImage is available
-          'username': ref
-              .read(authProvider.notifier)
-              .userData['name'], // Assuming username is available
-        });
-
-    _messageController.clear();
-  }
-
-  @override
+  }  @override
   Widget build(BuildContext context) {
-    String myId = ref.read(authProvider) as String;
+    final authState = ref.read(authProvider);
+    final myId = authState.userId;
+    
+    if (myId == null) {
+      return Scaffold(
+        body: Center(
+          child: Text('Please log in to access chat'),
+        ),
+      );
+    }
 
     return Scaffold(
       body: SafeArea(
@@ -156,19 +142,38 @@ class _ChatMessageScreenState extends ConsumerState<ChatMessageScreen> {
                       final userIsSame =
                           currentMessageUsedId == nextMessageUsedId;
 
+                      // Convert Firebase data to Message object
+                      final messageObj = Message(
+                        id: chatData[index].id,
+                        chatId: widget.chatId,
+                        senderId: currentMessage['senderId'] ?? '',
+                        content: currentMessage['text'] ?? '',
+                        type: MessageType.text,
+                        status: MessageStatus.sent,
+                        timestamp: (currentMessage['timestamp'] as Timestamp).toDate(),
+                      );
+
+                      // Convert Firebase data to User object for sender
+                      final senderUser = User(
+                        id: currentMessage['senderId'] ?? '',
+                        email: '', // Not available in chat data
+                        name: currentMessage['username'] ?? 'Unknown User',
+                        role: UserRole.student, // Default role
+                        profileImage: currentMessage['userImage'],
+                        createdAt: DateTime.now(),
+                      );
+
                       if (userIsSame) {
                         return MessageBubble.next(
-                          message: currentMessage['text'],
+                          message: messageObj,
+                          sender: senderUser,
                           isMe: isMe,
-                          timestamp: currentMessage['timestamp'],
                         );
                       } else {
                         return MessageBubble.first(
-                          userImage: currentMessage['userImage'],
-                          username: currentMessage['username'],
-                          message: currentMessage['text'],
+                          message: messageObj,
+                          sender: senderUser,
                           isMe: isMe,
-                          timestamp: currentMessage['timestamp'],
                         );
                       }
                     },
@@ -217,7 +222,7 @@ class _ChatMessageScreenState extends ConsumerState<ChatMessageScreen> {
                         );
                         print(messagesDataList);
 
-                        final myId = ref.read(authProvider) as String;
+                        final myId = ref.read(authProvider).userId!;
                         await FirebaseFirestore.instance
                             .collection('chats')
                             .doc(widget.chatId)
@@ -258,13 +263,7 @@ class _ChatMessageScreenState extends ConsumerState<ChatMessageScreen> {
                                 .read(profileProvider.notifier)
                                 .userData['name'],
                           });
-                      Map<String, dynamic> sender = await FirebaseFirestore
-                          .instance
-                          .collection('users')
-                          .doc(myId)
-                          .get()
-                          .then((doc) => doc.data() as Map<String, dynamic>);
-                      FirebaseFirestore.instance
+                      await FirebaseFirestore.instance
                           .collection('chats')
                           .doc(widget.chatId)
                           .update({

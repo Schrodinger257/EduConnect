@@ -14,7 +14,7 @@ class _LoginWidgetState extends ConsumerState<LoginWidget> {
   bool isStudent = false;
   bool isInstructor = false;
   bool isAdmin = false;
-  GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   String _email = '';
   String _password = '';
 
@@ -40,7 +40,7 @@ class _LoginWidgetState extends ConsumerState<LoginWidget> {
     _formKey.currentState!.validate();
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-      await ref.read(authProvider.notifier).login(_email, _password, context);
+      await ref.read(authProvider.notifier).login(_email, _password);
       ref.read(screenProvider.notifier).setScreen(2);
     }
   }
@@ -56,9 +56,9 @@ class _LoginWidgetState extends ConsumerState<LoginWidget> {
             children: [
               Column(
                 children: [
-                  Container(
-                    child: SvgPicture.asset('assets/vectors/pana.svg'),
+                  SizedBox(
                     height: 200,
+                    child: SvgPicture.asset('assets/vectors/pana.svg'),
                   ),
                   Form(
                     key: _formKey,
