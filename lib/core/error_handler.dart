@@ -1,8 +1,6 @@
-import 'dart:developer' as developer;
 import 'dart:async';
 import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'logger.dart';
 
@@ -29,28 +27,25 @@ class ErrorHandler {
 
   /// Converts technical errors to user-friendly messages
   static String getUserFriendlyMessage(Exception error) {
-    switch (error.runtimeType) {
+    return switch (error) {
       // Firebase Auth Errors
-      case FirebaseAuthException:
-        return _handleFirebaseAuthError(error as FirebaseAuthException);
+      FirebaseAuthException e => _handleFirebaseAuthError(e),
       
       // Firestore Errors
-      case FirebaseException:
-        return _handleFirestoreError(error as FirebaseException);
+      FirebaseException e => _handleFirestoreError(e),
       
       // Network Errors
-      case SocketException:
-        return 'Please check your internet connection and try again.';
+      SocketException _ => 'Please check your internet connection and try again.',
       
       // Timeout Errors
-      case TimeoutException:
-        return 'The request timed out. Please try again.';
+      TimeoutException _ => 'The request timed out. Please try again.',
       
       // Generic errors
-      default:
+      _ => () {
         _logger.warning('Unhandled error type: ${error.runtimeType}');
         return 'Something went wrong. Please try again later.';
-    }
+      }(),
+    };
   }
 
   /// Handles Firebase Authentication specific errors

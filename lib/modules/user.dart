@@ -15,6 +15,15 @@ enum UserRole {
       orElse: () => throw ArgumentError('Invalid user role: $value'),
     );
   }
+
+  /// Returns the display name for the role
+  String get displayName {
+    return switch (this) {
+      UserRole.student => 'Student',
+      UserRole.instructor => 'Instructor',
+      UserRole.admin => 'Administrator',
+    };
+  }
 }
 
 /// Enhanced User model with comprehensive validation and JSON serialization

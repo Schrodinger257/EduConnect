@@ -1,5 +1,4 @@
 import 'dart:developer' as developer;
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 
 /// Log levels for categorizing log messages
@@ -232,7 +231,7 @@ class Logger {
     buffer.writeln('EduConnect Log Export');
     buffer.writeln('Generated: ${DateTime.now()}');
     buffer.writeln('Total entries: ${logs.length}');
-    buffer.writeln('${'=' * 50}');
+    buffer.writeln('=' * 50);
     
     for (final log in logs) {
       buffer.writeln(_formatMessage(log.level, log.message, log.timestamp));
@@ -299,26 +298,26 @@ mixin LoggerMixin {
   Logger get logger => Logger();
   
   void logDebug(String message, {Object? error, StackTrace? stackTrace}) {
-    logger.debug('${runtimeType}: $message', error: error, stackTrace: stackTrace);
+    logger.debug('$runtimeType: $message', error: error, stackTrace: stackTrace);
   }
   
   void logInfo(String message, {Object? error, StackTrace? stackTrace}) {
-    logger.info('${runtimeType}: $message', error: error, stackTrace: stackTrace);
+    logger.info('$runtimeType: $message', error: error, stackTrace: stackTrace);
   }
   
   void logWarning(String message, {Object? error, StackTrace? stackTrace}) {
-    logger.warning('${runtimeType}: $message', error: error, stackTrace: stackTrace);
+    logger.warning('$runtimeType: $message', error: error, stackTrace: stackTrace);
   }
   
   void logError(String message, {Object? error, StackTrace? stackTrace}) {
-    logger.error('${runtimeType}: $message', error: error, stackTrace: stackTrace);
+    logger.error('$runtimeType: $message', error: error, stackTrace: stackTrace);
   }
   
   void logUserAction(String action, {Map<String, dynamic>? properties}) {
-    logger.userAction('${runtimeType}: $action', properties: properties);
+    logger.userAction('$runtimeType: $action', properties: properties);
   }
   
   void logPerformance(String operation, Duration duration, {Map<String, dynamic>? metrics}) {
-    logger.performance('${runtimeType}: $operation', duration, metrics: metrics);
+    logger.performance('$runtimeType: $operation', duration, metrics: metrics);
   }
 }

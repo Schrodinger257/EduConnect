@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class MyAnnouncementScreen extends ConsumerStatefulWidget {
+  const MyAnnouncementScreen({super.key});
+
   @override
   ConsumerState<MyAnnouncementScreen> createState() =>
       _MyAnnouncementScreenState();
@@ -14,7 +16,17 @@ class MyAnnouncementScreen extends ConsumerStatefulWidget {
 class _MyAnnouncementScreenState extends ConsumerState<MyAnnouncementScreen> {
   @override
   Widget build(BuildContext context) {
-    final userId = ref.watch(authProvider);
+    final authState = ref.watch(authProvider);
+    final userId = authState.userId;
+    
+    if (userId == null) {
+      return const Scaffold(
+        body: Center(
+          child: Text('Please log in to access announcements'),
+        ),
+      );
+    }
+    
     return Scaffold(
       appBar: AppBar(
         title: Text(

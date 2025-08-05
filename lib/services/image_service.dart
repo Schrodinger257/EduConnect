@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../core/result.dart';
@@ -30,8 +29,8 @@ class ImageService {
       final pickedFile = await _picker.pickImage(
         source: source,
         imageQuality: imageQuality,
-        maxWidth: maxWidth,
-        maxHeight: maxHeight,
+        maxWidth: maxWidth.toDouble(),
+        maxHeight: maxHeight.toDouble(),
       );
 
       if (pickedFile == null) {
@@ -129,8 +128,8 @@ class ImageService {
       final compressedFile = await _picker.pickImage(
         source: ImageSource.gallery,
         imageQuality: quality,
-        maxWidth: maxWidth,
-        maxHeight: maxHeight,
+        maxWidth: maxWidth.toDouble(),
+        maxHeight: maxHeight.toDouble(),
       );
 
       if (compressedFile == null) {

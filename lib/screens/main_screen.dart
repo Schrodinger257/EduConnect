@@ -1,6 +1,6 @@
 import 'package:educonnect/providers/auth_provider.dart';
 import 'package:educonnect/providers/profile_provider.dart';
-import 'package:educonnect/screens/Announcement_screen.dart';
+import 'package:educonnect/screens/announcement_screen.dart';
 import 'package:educonnect/screens/chat_screen.dart';
 import 'package:educonnect/screens/courses_screen.dart';
 import 'package:educonnect/screens/homefeed_screen.dart';
@@ -11,7 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:educonnect/providers/screen_provider.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
-  MainScreen({super.key});
+  const MainScreen({super.key});
 
   @override
   ConsumerState<MainScreen> createState() => _MainScreenState();
@@ -28,11 +28,12 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
   @override
   void initState() {
-    // TODO: implement initState
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref
-          .read(profileProvider.notifier)
-          .getUserData(ref.read(authProvider) as String);
+      final authState = ref.read(authProvider);
+      final userId = authState.userId;
+      if (userId != null) {
+        ref.read(profileProvider.notifier).getUserData(userId);
+      }
     });
     super.initState();
   }

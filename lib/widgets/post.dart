@@ -1,5 +1,5 @@
-import 'dart:io';
 
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:educonnect/providers/auth_provider.dart';
 import 'package:educonnect/providers/post_provider.dart';
@@ -12,7 +12,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 
 class PostWidget extends ConsumerStatefulWidget {
-  PostWidget({
+  const PostWidget({
     super.key,
     required this.post,
     this.isMyPostScreen = false,
@@ -45,7 +45,8 @@ class _PostWidgetState extends ConsumerState<PostWidget> {
   }
 
   void _toggleLike() async {
-    final currentUserId = ref.read(authProvider) as String?;
+    final authState = ref.read(authProvider);
+    final currentUserId = authState.userId;
     if (currentUserId == null) return;
     
     // Call the provider's toggleLike method
@@ -60,13 +61,76 @@ class _PostWidgetState extends ConsumerState<PostWidget> {
     );
   }
 
+  /// Helper method to get the appropriate image provider for post images
+  ImageProvider _getPostImageProvider(String imageUrl) {
+    print('Post image URL: $imageUrl'); // Debug log
+    
+    // Check if it's a local file path (starts with /data/ or file://)
+    if (imageUrl.startsWith('/data/') || imageUrl.startsWith('file://')) {
+      print('Using FileImage for local path'); // Debug log
+      // For local files, use FileImage
+      return FileImage(File(imageUrl.replaceFirst('file://', '')));
+    }
+    
+    // Check if it's a valid URL (starts with http:// or https://)
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      print('Using NetworkImage for URL'); // Debug log
+      return NetworkImage(imageUrl);
+    }
+    
+    print('Using NetworkImage as fallback'); // Debug log
+    // If it's neither, treat it as a network image (fallback)
+    return NetworkImage(imageUrl);
+  }
+
+  /// Helper method to get the appropriate image provider for profile images
+  ImageProvider _getProfileImageProvider(dynamic profileImage) {
+    // Handle null or empty profile image
+    if (profileImage == null || 
+        profileImage == '' || 
+        profileImage == 'default_avatar') {
+      return AssetImage('assets/images/default_avatar.png');
+    }
+    
+    // Convert to string safely
+    String imageUrl = profileImage.toString();
+    
+    // Check if it's a local file path (starts with /data/ or file://)
+    if (imageUrl.startsWith('/data/') || imageUrl.startsWith('file://')) {
+      // For local files, use FileImage
+      return FileImage(File(imageUrl.replaceFirst('file://', '')));
+    }
+    
+    // Check if it's a valid URL (starts with http:// or https://)
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      return NetworkImage(imageUrl);
+    }
+    
+    // Default fallback
+    return AssetImage('assets/images/default_avatar.png');
+  }
+
   @override
   Widget build(BuildContext context) {
-    final currentUserId = ref.watch(authProvider) as String?;
+    final authState = ref.watch(authProvider);
+    final currentUserId = authState.userId;
     final isLiked = currentUserId != null && widget.post.isLikedBy(currentUserId);
     
     Color likeColor = Theme.of(context).primaryColor;
     Color bookmarkColor = Theme.of(context).primaryColor;
+
+    // Check if userId is valid before using it
+    if (widget.post.userId.isEmpty) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            'Error: Invalid post data - missing user ID',
+            style: TextStyle(color: Colors.red),
+          ),
+        ),
+      );
+    }
 
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance
@@ -107,7 +171,7 @@ class _PostWidgetState extends ConsumerState<PostWidget> {
 
     final userData = snapShot.data!.data() as Map<String, dynamic>;
 
-    return Container(
+    return SizedBox(
       key: ValueKey(widget.post.id),
       width: double.infinity,
       child: Column(
@@ -131,12 +195,7 @@ class _PostWidgetState extends ConsumerState<PostWidget> {
                               shape: BoxShape.circle,
                               color: Theme.of(context).shadowColor,
                               image: DecorationImage(
-                                image:
-                                    userData['profileImage'] == 'default_avatar'
-                                    ? AssetImage(
-                                        'assets/images/default_avatar.png',
-                                      )
-                                    : NetworkImage(userData['profileImage']),
+                                image: _getProfileImageProvider(userData['profileImage']),
                                 fit: BoxFit.cover,
                               ),
                             ),
@@ -185,7 +244,8 @@ class _PostWidgetState extends ConsumerState<PostWidget> {
                               ];
                             },
                             onSelected: (value) async {
-                              final currentUserId = ref.read(authProvider) as String?;
+                              final authState = ref.read(authProvider);
+                              final currentUserId = authState.userId;
                               if (currentUserId == null) return;
                               
                               if (value == 'Bookmark') {
@@ -220,33 +280,62 @@ class _PostWidgetState extends ConsumerState<PostWidget> {
                   ),
                 ),
                 SizedBox(height: 5),
+                // Debug logging
+                Builder(
+                  builder: (context) {
+                    print('Post ${widget.post.id} hasImage: ${widget.post.hasImage}');
+                    print('Post ${widget.post.id} imageUrl: ${widget.post.imageUrl}');
+                    return SizedBox.shrink();
+                  },
+                ),
                 if (widget.post.hasImage)
                   GestureDetector(
                     onTap: () {
                       showImageViewer(
                         context,
-                        Image.network(widget.post.imageUrl!).image,
+                        _getPostImageProvider(widget.post.imageUrl!),
                         useSafeArea: true,
                         doubleTapZoomable: true,
                         closeButtonColor: Theme.of(context).primaryColor,
                         swipeDismissible: true,
                       );
                     },
-                    child: Image.network(
+                    child: Image(
+                      image: _getPostImageProvider(widget.post.imageUrl!),
                       loadingBuilder: (context, child, loadingProgress) {
                         if (loadingProgress == null) return child;
                         return SizedBox(
                           height: 250,
-                          child: CircularProgressIndicator(
-                            color: Theme.of(context).primaryColor,
-                            value: loadingProgress.expectedTotalBytes != null
-                                ? loadingProgress.cumulativeBytesLoaded /
-                                      (loadingProgress.expectedTotalBytes ?? 1)
-                                : null,
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              color: Theme.of(context).primaryColor,
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                        (loadingProgress.expectedTotalBytes ?? 1)
+                                  : null,
+                            ),
                           ),
                         );
                       },
-                      widget.post.imageUrl!,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          height: 200,
+                          color: Colors.grey[300],
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.broken_image, size: 50, color: Colors.grey[600]),
+                                SizedBox(height: 8),
+                                Text(
+                                  'Failed to load image',
+                                  style: TextStyle(color: Colors.grey[600]),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
                       fit: BoxFit.cover,
                     ),
                   ),

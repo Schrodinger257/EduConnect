@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../lib/providers/auth_provider.dart';
-import '../../lib/modules/user.dart';
-import '../../lib/core/logger.dart';
+import 'package:educonnect/providers/auth_provider.dart';
+import 'package:educonnect/modules/user.dart';
+import 'package:educonnect/core/logger.dart';
 
 void main() {
   group('RoleProvider Tests', () {

@@ -1,27 +1,35 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../repositories/post_repository.dart';
-import '../repositories/firebase_post_repository.dart';
+import '../core/logger.dart';
 import '../repositories/user_repository.dart';
 import '../repositories/firebase_user_repository.dart';
+import '../repositories/post_repository.dart';
+import '../repositories/firebase_post_repository.dart';
 import '../services/navigation_service.dart';
-import '../core/logger.dart';
+import '../services/image_service.dart';
 
-/// Shared provider instances used across the application
+/// Core providers for dependency injection
 
-// Repository providers
-final postRepositoryProvider = Provider<PostRepository>((ref) {
-  return FirebasePostRepository();
+/// Logger provider
+final loggerProvider = Provider<Logger>((ref) {
+  return Logger();
 });
 
+/// Navigation service provider
+final navigationServiceProvider = Provider<NavigationService>((ref) {
+  return NavigationService();
+});
+
+/// User repository provider
 final userRepositoryProvider = Provider<UserRepository>((ref) {
   return FirebaseUserRepository();
 });
 
-// Service providers
-final navigationServiceProvider = Provider<NavigationService>((ref) {
-  return NavigationService.instance;
+/// Post repository provider
+final postRepositoryProvider = Provider<PostRepository>((ref) {
+  return FirebasePostRepository();
 });
 
-final loggerProvider = Provider<Logger>((ref) {
-  return Logger();
+/// Image service provider
+final imageServiceProvider = Provider<ImageService>((ref) {
+  return ImageService();
 });

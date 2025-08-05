@@ -1,4 +1,3 @@
-import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:educonnect/screens/bookmarks_screen.dart';
@@ -13,6 +12,8 @@ import 'package:educonnect/modules/user.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
+  const ProfileScreen({super.key});
+
   @override
   ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
@@ -132,6 +133,34 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Map<String, dynamic> user = {};
 
+  // Helper method to get the appropriate image provider
+  ImageProvider _getProfileImageProvider(dynamic profileImage) {
+    // Handle null or empty profile image
+    if (profileImage == null || 
+        profileImage == '' || 
+        profileImage == 'default_avatar') {
+      return AssetImage('assets/images/default_avatar.png');
+    }
+    
+    // Convert to string safely
+    String imageUrl = profileImage.toString();
+    
+    // Check if it's a local file path (starts with /data/ or file://)
+    if (imageUrl.startsWith('/data/') || imageUrl.startsWith('file://')) {
+      // For local files, use AssetImage with default avatar
+      // In a real app, you might want to use FileImage for local files
+      return AssetImage('assets/images/default_avatar.png');
+    }
+    
+    // Check if it's a valid URL (starts with http:// or https://)
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      return NetworkImage(imageUrl);
+    }
+    
+    // Default fallback
+    return AssetImage('assets/images/default_avatar.png');
+  }
+
   // Future<Map<String, dynamic>> _getUser(String userID) async {
   //   DocumentSnapshot doc = await FirebaseFirestore.instance
   //       .collection('users')
@@ -148,7 +177,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget build(BuildContext context) {
     double width = MediaQuery.of(context).size.width;
     double height = MediaQuery.of(context).size.height;
-    String userID = ref.watch(authProvider) as String;
+    final authState = ref.watch(authProvider);
+    final userID = authState.userId;
+    
+    if (userID == null) {
+      return const Scaffold(
+        body: Center(
+          child: Text('Please log in to access this screen'),
+        ),
+      );
+    }
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance
           .collection('users')
@@ -187,7 +225,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         }
 
         // 4. Now it's safe to access the data.
-        final userData = snapshot.data!.data() as Map<String, dynamic>;
+        final data = snapshot.data!.data();
+        if (data == null) {
+          return Center(
+            child: SvgPicture.asset(
+              'assets/vectors/404-Error-Page-not-Found-with-people-connecting-a-plug-pana.svg',
+              height: 300,
+            ),
+          );
+        }
+        
+        final userData = data as Map<String, dynamic>;
         ref.read(profileProvider.notifier).user =
             userData; // Assign to the state variable
 
@@ -228,7 +276,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             ),
                           );
                         },
-                        child: Container(
+                        child: SizedBox(
                           width: width * 0.95,
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -246,15 +294,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   shape: BoxShape.circle,
                                   color: Theme.of(context).shadowColor,
                                   image: DecorationImage(
-                                    image:
-                                        userData['profileImage'] ==
-                                            'default_avatar'
-                                        ? AssetImage(
-                                            'assets/images/default_avatar.png',
-                                          )
-                                        : NetworkImage(
-                                            userData['profileImage'],
-                                          ),
+                                    image: _getProfileImageProvider(userData['profileImage']),
                                     fit: BoxFit.cover,
                                   ),
                                 ),
@@ -304,7 +344,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                       ),
                     ),
-                    Container(width: width, height: height / 2.5),
+                    SizedBox(width: width, height: height / 2.5),
                   ],
                 ),
                 Container(
@@ -314,7 +354,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: Text(
-                          userData['name'],
+                          userData['name'] ?? 'Unknown User',
                           textAlign: TextAlign.left,
                           style: Theme.of(context).textTheme.titleLarge!
                               .copyWith(
@@ -332,40 +372,40 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         context,
                         width,
                         title: 'Role',
-                        value: userData['roleCode'],
+                        value: userData['roleCode'] ?? 'Unknown',
                       ),
                       _infoCard(
                         context,
                         width,
                         title: 'Phone',
-                        value: userData['phone'],
+                        value: userData['phone'] ?? 'Not provided',
                       ),
                       _infoCard(
                         context,
                         width,
                         title: 'Email',
-                        value: userData['email'],
+                        value: userData['email'] ?? 'Not provided',
                       ),
                       if (userData['roleCode'] == 'student')
                         _infoCard(
                           context,
                           width,
                           title: 'Grade',
-                          value: userData['grade'],
+                          value: userData['grade'] ?? 'Not assigned',
                         ),
                       if (userData['roleCode'] == 'student')
                         _infoCard(
                           context,
                           width,
                           title: 'Department',
-                          value: userData['department'],
+                          value: userData['department'] ?? 'Not assigned',
                         ),
                       if (userData['roleCode'] == 'instructor')
                         _infoCard(
                           context,
                           width,
                           title: 'Field of expertise',
-                          value: userData['fieldofexpertise'],
+                          value: userData['fieldofexpertise'] ?? 'Not assigned',
                         ),
                       _decorLine(context),
                       SizedBox(height: 10),
@@ -435,10 +475,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           ),
                         ),
                         onPressed: () {
-                          ref.watch(authProvider.notifier).logout(context);
+                          ref.watch(authProvider.notifier).logout();
                           ref
                               .watch(authScreenProvider.notifier)
-                              .setAuthState(true);
+                              .setAuthMode(true);
                         },
                         child: SizedBox(
                           height: 30,

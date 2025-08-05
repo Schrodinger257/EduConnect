@@ -1,29 +1,24 @@
-import 'package:educonnect/modules/user.dart';
-import 'package:educonnect/repositories/user_repository.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:educonnect/modules/user.dart' as app_user;
 import 'package:educonnect/screens/auth_screen.dart';
 import 'package:educonnect/screens/main_screen.dart';
-import 'package:educonnect/services/navigation_service.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../core/result.dart';
 import '../core/logger.dart';
+import '../repositories/user_repository.dart';
+import '../services/navigation_service.dart';
+import 'providers.dart';
 
 /// State class for role selection during registration
 class RoleState {
-  final UserRole? selectedRole;
+  final app_user.UserRole? selectedRole;
   final bool isValid;
   final String? error;
 
-  const RoleState({
-    this.selectedRole,
-    this.isValid = false,
-    this.error,
-  });
+  const RoleState({this.selectedRole, this.isValid = false, this.error});
 
   RoleState copyWith({
-    UserRole? selectedRole,
+    app_user.UserRole? selectedRole,
     bool? isValid,
     String? error,
     bool clearError = false,
@@ -36,26 +31,26 @@ class RoleState {
   }
 
   bool get hasError => error != null;
-  bool get isStudent => selectedRole == UserRole.student;
-  bool get isInstructor => selectedRole == UserRole.instructor;
-  bool get isAdmin => selectedRole == UserRole.admin;
+  bool get isStudent => selectedRole == app_user.UserRole.student;
+  bool get isInstructor => selectedRole == app_user.UserRole.instructor;
+  bool get isAdmin => selectedRole == app_user.UserRole.admin;
 }
 
 /// Provider for managing role selection during user registration
 class RoleProvider extends StateNotifier<RoleState> {
   final Logger _logger;
 
-  RoleProvider({Logger? logger}) 
-      : _logger = logger ?? Logger(),
-        super(const RoleState());
+  RoleProvider({Logger? logger})
+    : _logger = logger ?? Logger(),
+      super(const RoleState());
 
   /// Selects a role and validates the selection
-  void selectRole(UserRole role) {
+  void selectRole(app_user.UserRole role) {
     try {
       _logger.info('Selecting role: ${role.value}');
-      
+
       final validationResult = _validateRoleSelection(role);
-      
+
       if (validationResult.isSuccess) {
         state = state.copyWith(
           selectedRole: role,
@@ -68,7 +63,9 @@ class RoleProvider extends StateNotifier<RoleState> {
           error: validationResult.errorMessage,
           isValid: false,
         );
-        _logger.warning('Role selection validation failed: ${validationResult.errorMessage}');
+        _logger.warning(
+          'Role selection validation failed: ${validationResult.errorMessage}',
+        );
       }
     } catch (e) {
       _logger.error('Error selecting role: $e');
@@ -86,20 +83,20 @@ class RoleProvider extends StateNotifier<RoleState> {
   }
 
   /// Validates role selection
-  Result<void> _validateRoleSelection(UserRole role) {
+  Result<void> _validateRoleSelection(app_user.UserRole role) {
     // Basic validation - ensure role is valid
-    if (!UserRole.values.contains(role)) {
+    if (!app_user.UserRole.values.contains(role)) {
       return Result.error('Invalid role selected');
     }
 
     // Additional validation can be added here
     // For example, checking if certain roles are allowed for registration
-    
+
     return Result.success(null);
   }
 
   /// Checks if the current user can select a specific role
-  bool canSelectRole(UserRole role) {
+  bool canSelectRole(app_user.UserRole role) {
     // Add any business logic for role selection permissions
     // For now, all roles are selectable during registration
     return true;
@@ -111,8 +108,10 @@ class RoleProvider extends StateNotifier<RoleState> {
   }
 
   /// Gets all available roles for selection
-  List<UserRole> get availableRoles {
-    return UserRole.values.where((role) => canSelectRole(role)).toList();
+  List<app_user.UserRole> get availableRoles {
+    return app_user.UserRole.values
+        .where((role) => canSelectRole(role))
+        .toList();
   }
 }
 
@@ -153,26 +152,22 @@ class AuthScreenState {
 class AuthScreenProvider extends StateNotifier<AuthScreenState> {
   final Logger _logger;
 
-  AuthScreenProvider({Logger? logger}) 
-      : _logger = logger ?? Logger(),
-        super(const AuthScreenState());
+  AuthScreenProvider({Logger? logger})
+    : _logger = logger ?? Logger(),
+      super(const AuthScreenState());
 
   /// Toggles between login and signup modes
   void toggleAuthMode() {
-    _logger.info('Toggling auth mode from ${state.isLoginMode ? 'login' : 'signup'} to ${state.isLoginMode ? 'signup' : 'login'}');
-    state = state.copyWith(
-      isLoginMode: !state.isLoginMode,
-      clearError: true,
+    _logger.info(
+      'Toggling auth mode from ${state.isLoginMode ? 'login' : 'signup'} to ${state.isLoginMode ? 'signup' : 'login'}',
     );
+    state = state.copyWith(isLoginMode: !state.isLoginMode, clearError: true);
   }
 
   /// Sets the authentication mode explicitly
   void setAuthMode(bool isLoginMode) {
     _logger.info('Setting auth mode to ${isLoginMode ? 'login' : 'signup'}');
-    state = state.copyWith(
-      isLoginMode: isLoginMode,
-      clearError: true,
-    );
+    state = state.copyWith(isLoginMode: isLoginMode, clearError: true);
   }
 
   /// Sets loading state
@@ -190,16 +185,22 @@ class AuthScreenProvider extends StateNotifier<AuthScreenState> {
   void clearError() {
     state = state.copyWith(clearError: true);
   }
+
+  /// Toggles between login and signup modes (alias for toggleAuthMode)
+  void toggleAuthState() {
+    toggleAuthMode();
+  }
 }
 
-final authScreenProvider = StateNotifierProvider<AuthScreenProvider, AuthScreenState>((ref) {
-  return AuthScreenProvider(logger: Logger());
-});
+final authScreenProvider =
+    StateNotifierProvider<AuthScreenProvider, AuthScreenState>((ref) {
+      return AuthScreenProvider(logger: Logger());
+    });
 
 /// State for authentication management
 class AuthState {
-  final String userId;
-  final User user;
+  final String? userId;
+  final app_user.User? user;
   final bool isLoading;
   final String error;
   final bool isAuthenticated;
@@ -214,7 +215,7 @@ class AuthState {
 
   AuthState copyWith({
     String? userId,
-    User? user,
+    app_user.User? user,
     bool? isLoading,
     String? error,
     bool? isAuthenticated,
@@ -247,10 +248,12 @@ class AuthProvider extends StateNotifier<AuthState> {
   }) : _userRepository = userRepository,
        _navigationService = navigationService,
        _logger = logger,
-       super(AuthState(
-         userId: FirebaseAuth.instance.currentUser?.uid,
-         isAuthenticated: FirebaseAuth.instance.currentUser != null,
-       )) {
+       super(
+         AuthState(
+           userId: FirebaseAuth.instance.currentUser?.uid,
+           isAuthenticated: FirebaseAuth.instance.currentUser != null,
+         ),
+       ) {
     // Initialize user data if already authenticated
     _initializeUser();
   }
@@ -271,7 +274,7 @@ class AuthProvider extends StateNotifier<AuthState> {
           state = state.copyWith(user: user);
         },
         error: (message, exception) {
-          _logger.error('Error loading user data: $message', exception);
+          _logger.error('Error loading user data: $message', error: exception);
         },
       );
     } catch (e) {
@@ -284,7 +287,7 @@ class AuthProvider extends StateNotifier<AuthState> {
     try {
       _logger.info('Attempting login for email: $email');
       state = state.copyWith(isLoading: true, clearError: true);
-      
+
       _navigationService.showInfoSnackBar('Logging in...');
 
       final userCredential = await FirebaseAuth.instance
@@ -299,7 +302,7 @@ class AuthProvider extends StateNotifier<AuthState> {
 
       // Load user data
       final userResult = await _userRepository.getUserById(userId);
-      
+
       userResult.when(
         success: (user) {
           state = state.copyWith(
@@ -308,12 +311,15 @@ class AuthProvider extends StateNotifier<AuthState> {
             isLoading: false,
             isAuthenticated: true,
           );
-          
+
           _navigationService.showSuccessSnackBar('Login successful!');
           _navigationService.navigateAndReplace(MainScreen());
         },
         error: (message, exception) {
-          _logger.error('Error loading user data after login: $message', exception);
+          _logger.error(
+            'Error loading user data after login: $message',
+            error: exception,
+          );
           state = state.copyWith(
             isLoading: false,
             error: 'Failed to load user data: $message',
@@ -323,20 +329,17 @@ class AuthProvider extends StateNotifier<AuthState> {
       );
     } catch (e) {
       _logger.error('Login error: $e');
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoading: false, error: e.toString());
       _navigationService.showErrorSnackBar(getErrorMessage(e));
     }
   }
 
   /// Sign up with user information
-  Future<void> signup(User user, String password) async {
+  Future<void> signup(app_user.User user, String password) async {
     try {
       _logger.info('Attempting signup for email: ${user.email}');
       state = state.copyWith(isLoading: true, clearError: true);
-      
+
       _navigationService.showInfoSnackBar('Creating account...');
 
       final userCredential = await FirebaseAuth.instance
@@ -355,7 +358,7 @@ class AuthProvider extends StateNotifier<AuthState> {
       // Create user profile with the generated ID
       final newUser = user.copyWith(id: userId);
       final createResult = await _userRepository.createUser(newUser);
-      
+
       createResult.when(
         success: (createdUser) {
           state = state.copyWith(
@@ -364,20 +367,25 @@ class AuthProvider extends StateNotifier<AuthState> {
             isLoading: false,
             isAuthenticated: true,
           );
-          
-          _navigationService.showSuccessSnackBar('Account created successfully!');
+
+          _navigationService.showSuccessSnackBar(
+            'Account created successfully!',
+          );
           _navigationService.navigateAndReplace(MainScreen());
         },
-        error: (message, exception) {
-          _logger.error('Error creating user profile: $message', exception);
-          
+        error: (message, exception) async {
+          _logger.error(
+            'Error creating user profile: $message',
+            error: exception,
+          );
+
           // Clean up Firebase Auth user if profile creation failed
           try {
             await FirebaseAuth.instance.currentUser?.delete();
           } catch (deleteError) {
             _logger.error('Error deleting Firebase Auth user: $deleteError');
           }
-          
+
           state = state.copyWith(
             isLoading: false,
             error: 'Failed to create user profile: $message',
@@ -387,18 +395,15 @@ class AuthProvider extends StateNotifier<AuthState> {
       );
     } catch (e) {
       _logger.error('Signup error: $e');
-      
+
       // Clean up Firebase Auth user if it was created
       try {
         await FirebaseAuth.instance.currentUser?.delete();
       } catch (deleteError) {
         _logger.error('Error deleting Firebase Auth user: $deleteError');
       }
-      
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+
+      state = state.copyWith(isLoading: false, error: e.toString());
       _navigationService.showErrorSnackBar(getErrorMessage(e));
     }
   }
@@ -407,14 +412,14 @@ class AuthProvider extends StateNotifier<AuthState> {
   Future<void> logout() async {
     try {
       _logger.info('Logging out user: ${state.userId}');
-      
+
       await FirebaseAuth.instance.signOut();
-      
+
       state = const AuthState();
-      
+
       _navigationService.showSuccessSnackBar('Logged out successfully!');
       _navigationService.navigateAndReplace(AuthScreen());
-      
+
       _logger.info('User logged out successfully');
     } catch (e) {
       _logger.error('Logout error: $e');
@@ -425,7 +430,7 @@ class AuthProvider extends StateNotifier<AuthState> {
   /// Get user-friendly error message
   String getErrorMessage(dynamic error) {
     final errorString = error.toString().toLowerCase();
-    
+
     if (errorString.contains('user-not-found')) {
       return 'No account found with this email address';
     } else if (errorString.contains('wrong-password')) {
@@ -447,7 +452,7 @@ class AuthProvider extends StateNotifier<AuthState> {
   bool get isAuthenticated => state.isAuthenticated;
 
   /// Get current user
-  User? get currentUser => state.user;
+  app_user.User? get currentUser => state.user;
 
   /// Get current user ID
   String? get currentUserId => state.userId;
@@ -460,6 +465,3 @@ final authProvider = StateNotifierProvider<AuthProvider, AuthState>((ref) {
     logger: ref.read(loggerProvider),
   );
 });
-
-// Import shared providers
-import 'providers.dart';

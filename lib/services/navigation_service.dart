@@ -75,7 +75,7 @@ class NavigationService {
   }
 
   /// Show modal bottom sheet
-  Future<T?> showModalBottomSheet<T>({
+  Future<T?> showCustomModalBottomSheet<T>({
     required Widget child,
     bool isScrollControlled = false,
     bool useSafeArea = false,
@@ -95,8 +95,8 @@ class NavigationService {
     );
   }
 
-  /// Show dialog
-  Future<T?> showDialog<T>({
+  /// Show custom dialog
+  Future<T?> showCustomDialog<T>({
     required Widget child,
     bool barrierDismissible = true,
   }) {

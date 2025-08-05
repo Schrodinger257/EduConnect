@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../modules/comment.dart';
 import '../modules/user.dart';
 import '../providers/comment_provider.dart';
-import '../providers/auth_provider.dart';
 import 'comment_widget.dart';
 import 'comment_input.dart';
 
@@ -58,7 +56,7 @@ class _CommentsSectionState extends ConsumerState<CommentsSection> {
                       Icon(
                         Icons.error_outline,
                         size: 48,
-                        color: Theme.of(context).errorColor,
+                        color: Theme.of(context).colorScheme.error,
                       ),
                       const SizedBox(height: 16),
                       Text(

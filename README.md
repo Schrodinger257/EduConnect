@@ -73,7 +73,7 @@ educonnect/
 │   │   ├── courses_screen.dart     # Course listing and management
 │   │   ├── chat_screen.dart        # Messaging interface
 │   │   ├── profile_screen.dart     # User profile management
-│   │   └── Announcement_screen.dart # System announcements
+│   │   └── announcement_screen.dart # System announcements
 │   └── widgets/           # Reusable UI components
 │       ├── bottom_nav_bar.dart     # Navigation bar
 │       ├── login.dart              # Login form component

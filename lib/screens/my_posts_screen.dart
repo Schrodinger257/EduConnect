@@ -52,7 +52,7 @@ class _MyPostsScreenState extends ConsumerState<MyPostsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final userId = ref.watch(authProvider);
+    final userId = ref.watch(authProvider).userId;
     final posts = ref.watch(ownPostProvider.select((state) => state.posts));
     final isLoading = ref.watch(
       ownPostProvider.select((state) => state.isLoading),
@@ -68,8 +68,9 @@ class _MyPostsScreenState extends ConsumerState<MyPostsScreen> {
       body: RefreshIndicator(
         // 3. Add the onRefresh callback.
         // This assumes you have a `refreshOwnPosts` method in your provider.
-        onRefresh: () =>
-            ref.read(ownPostProvider.notifier).refreshOwnPosts(userId),
+        onRefresh: () => ref
+            .read(ownPostProvider.notifier)
+            .refreshOwnPosts(userId as String),
         child: (posts.isEmpty && !isLoading)
             // 4. Handle the empty state correctly to allow pull-to-refresh.
             ? LayoutBuilder(

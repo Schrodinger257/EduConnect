@@ -1,11 +1,14 @@
 import 'package:educonnect/providers/auth_provider.dart';
 import 'package:educonnect/providers/post_provider.dart';
+import 'package:educonnect/modules/post.dart';
 import 'package:educonnect/widgets/post.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class BookmarksScreen extends ConsumerStatefulWidget {
+  const BookmarksScreen({super.key});
+
   @override
   ConsumerState<BookmarksScreen> createState() => _BookmarksScreenState();
 }
@@ -13,7 +16,17 @@ class BookmarksScreen extends ConsumerStatefulWidget {
 class _BookmarksScreenState extends ConsumerState<BookmarksScreen> {
   @override
   Widget build(BuildContext context) {
-    final userId = ref.watch(authProvider);
+    final authState = ref.watch(authProvider);
+    final userId = authState.userId;
+    
+    if (userId == null) {
+      return const Scaffold(
+        body: Center(
+          child: Text('Please log in to access bookmarks'),
+        ),
+      );
+    }
+    
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -22,11 +35,11 @@ class _BookmarksScreenState extends ConsumerState<BookmarksScreen> {
         ),
       ),
       // ...existing code...
-      body: StreamBuilder<List<Map<String, dynamic>>>(
+      body: StreamBuilder<List<Post>>(
         // Use the provider method which already returns the filtered list of posts.
         stream: ref
             .watch(postProvider.notifier)
-            .getBookmarkedPosts(userId as String),
+            .getBookmarkedPosts(userId),
         builder: (ctx, snapShot) {
           if (snapShot.connectionState == ConnectionState.waiting) {
             return Center(

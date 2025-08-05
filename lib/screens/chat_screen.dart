@@ -1,14 +1,14 @@
-import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:educonnect/providers/auth_provider.dart';
-import 'package:educonnect/screens/chat_message_screen.dart';
-import 'package:educonnect/screens/chat_search%20screen.dart';
+import 'package:educonnect/screens/chat_search_screen.dart';
 import 'package:educonnect/widgets/chat_screen_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
+  const ChatScreen({super.key});
+
   @override
   ConsumerState<ChatScreen> createState() => _ChatScreenState();
 }
@@ -25,7 +25,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    String userId = ref.watch(authProvider) as String;
+    final authState = ref.watch(authProvider);
+    final userId = authState.userId;
+    
+    if (userId == null) {
+      return const Scaffold(
+        body: Center(
+          child: Text('Please log in to access this screen'),
+        ),
+      );
+    }
+    
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -79,7 +89,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     return Center(child: Text('No chats found.'));
                   }
                   chatsData = snapshot.data!.docs
-                      .map((doc) => doc.data() as Map<String, dynamic>)
+                      .map((doc) => doc.data())
                       .toList();
                   print(chatsData);
                   print(
