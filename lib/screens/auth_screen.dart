@@ -5,9 +5,11 @@ import 'package:educonnect/widgets/signup.dart';
 import 'package:educonnect/providers/auth_provider.dart';
 
 class AuthScreen extends ConsumerWidget {
+  const AuthScreen({super.key});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    var isLogin = ref.watch(authScreenProvider);
-    return Scaffold(body: isLogin ? LoginWidget() : SignupWidget());
+    var authScreenState = ref.watch(authScreenProvider);
+    return Scaffold(body: authScreenState.isLoginMode ? LoginWidget() : SignupWidget());
   }
 }

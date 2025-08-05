@@ -210,21 +210,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
   }
 
   Widget _buildSearchChip(String search) {
-    return ActionChip(
+    return Chip(
       label: Text(search),
-      onPressed: () {
-        _searchController.text = search;
-        _performSearch(search);
-      },
       backgroundColor: Theme.of(context).cardColor,
       labelStyle: TextStyle(
         color: Theme.of(context).primaryColor,
         fontSize: 12,
-      ),
-      deleteIcon: Icon(
-        Icons.close,
-        size: 16,
-        color: Theme.of(context).shadowColor.withOpacity(0.6),
       ),
       onDeleted: () {
         ref.read(searchProvider.notifier).removeRecentSearch(search);

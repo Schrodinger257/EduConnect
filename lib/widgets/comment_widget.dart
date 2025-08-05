@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:intl/intl.dart';
 
 import '../modules/comment.dart';
 import '../modules/user.dart';
@@ -88,7 +87,8 @@ class _CommentWidgetState extends ConsumerState<CommentWidget> {
   }
 
   void _deleteComment() async {
-    final currentUserId = ref.read(authProvider) as String?;
+    final authState = ref.read(authProvider);
+    final currentUserId = authState.userId;
     final isOwner = currentUserId == widget.comment.userId;
     final isModerator = widget.canModerate || 
                        widget.currentUserRole == UserRole.instructor || 
@@ -426,7 +426,7 @@ class _ReportCommentDialogState extends State<_ReportCommentDialog> {
                 title: Text(reason['label']!),
                 contentPadding: EdgeInsets.zero,
               );
-            }).toList(),
+            }),
             if (_selectedReason == 'other') ...[
               const SizedBox(height: 8),
               TextField(

@@ -16,6 +16,43 @@ class FirebasePostRepository implements PostRepository {
   }) : _firestore = firestore ?? FirebaseFirestore.instance,
        _logger = logger ?? Logger();
 
+  /// Helper method to convert Firestore document data to Post model format
+  Map<String, dynamic> _convertFirestoreDataToPost(Map<String, dynamic> data, String docId) {
+    data['id'] = docId;
+    
+    // Convert Firestore Timestamp to DateTime
+    if (data['timestamp'] is Timestamp) {
+      data['timestamp'] = (data['timestamp'] as Timestamp).toDate().toIso8601String();
+    }
+    
+    // Convert Firestore field names to Post model format
+    data['userId'] = data['userid'] ?? '';
+    
+    // Handle image URL field name variations - check all possible field names
+    if (data['imageUrl'] == null) {
+      if (data['imageurl'] != null) {
+        data['imageUrl'] = data['imageurl'];
+      } else if (data['image_url'] != null) {
+        data['imageUrl'] = data['image_url'];
+      } else if (data['imageURL'] != null) {
+        data['imageUrl'] = data['imageURL'];
+      }
+    }
+    
+    // Debug logging
+    _logger.info('Post $docId imageUrl: ${data['imageUrl']}');
+    _logger.info('Post $docId all fields: ${data.keys.toList()}');
+    
+    // Ensure required fields exist with defaults
+    data['likeCount'] = data['likes']?.length ?? 0;
+    data['likedBy'] = List<String>.from(data['likes'] ?? []);
+    data['commentCount'] = data['commentIds']?.length ?? 0;
+    data['commentIds'] = List<String>.from(data['commentIds'] ?? []);
+    data['tags'] = List<String>.from(data['tags'] ?? []);
+    
+    return data;
+  }
+
   @override
   Future<Result<List<Post>>> getPosts({
     int limit = 10,
@@ -38,21 +75,7 @@ class FirebasePostRepository implements PostRepository {
 
       for (final doc in snapshot.docs) {
         try {
-          final data = doc.data() as Map<String, dynamic>;
-          data['id'] = doc.id;
-          
-          // Convert Firestore Timestamp to DateTime
-          if (data['timestamp'] is Timestamp) {
-            data['timestamp'] = (data['timestamp'] as Timestamp).toDate().toIso8601String();
-          }
-          
-          // Ensure required fields exist with defaults
-          data['likeCount'] = data['likes']?.length ?? 0;
-          data['likedBy'] = List<String>.from(data['likes'] ?? []);
-          data['commentCount'] = data['commentIds']?.length ?? 0;
-          data['commentIds'] = List<String>.from(data['commentIds'] ?? []);
-          data['tags'] = List<String>.from(data['tags'] ?? []);
-          
+          final data = _convertFirestoreDataToPost(doc.data() as Map<String, dynamic>, doc.id);
           final post = Post.fromJson(data);
           posts.add(post);
         } catch (e) {
@@ -93,21 +116,7 @@ class FirebasePostRepository implements PostRepository {
 
       for (final doc in snapshot.docs) {
         try {
-          final data = doc.data() as Map<String, dynamic>;
-          data['id'] = doc.id;
-          
-          // Convert Firestore Timestamp to DateTime
-          if (data['timestamp'] is Timestamp) {
-            data['timestamp'] = (data['timestamp'] as Timestamp).toDate().toIso8601String();
-          }
-          
-          // Ensure required fields exist with defaults
-          data['likeCount'] = data['likes']?.length ?? 0;
-          data['likedBy'] = List<String>.from(data['likes'] ?? []);
-          data['commentCount'] = data['commentIds']?.length ?? 0;
-          data['commentIds'] = List<String>.from(data['commentIds'] ?? []);
-          data['tags'] = List<String>.from(data['tags'] ?? []);
-          
+          final data = _convertFirestoreDataToPost(doc.data() as Map<String, dynamic>, doc.id);
           final post = Post.fromJson(data);
           posts.add(post);
         } catch (e) {
@@ -399,21 +408,7 @@ class FirebasePostRepository implements PostRepository {
       
       for (final doc in snapshot.docs) {
         try {
-          final data = doc.data();
-          data['id'] = doc.id;
-          
-          // Convert Firestore Timestamp to DateTime
-          if (data['timestamp'] is Timestamp) {
-            data['timestamp'] = (data['timestamp'] as Timestamp).toDate().toIso8601String();
-          }
-          
-          // Ensure required fields exist with defaults
-          data['likeCount'] = data['likes']?.length ?? 0;
-          data['likedBy'] = List<String>.from(data['likes'] ?? []);
-          data['commentCount'] = data['commentIds']?.length ?? 0;
-          data['commentIds'] = List<String>.from(data['commentIds'] ?? []);
-          data['tags'] = List<String>.from(data['tags'] ?? []);
-          
+          final data = _convertFirestoreDataToPost(doc.data(), doc.id);
           final post = Post.fromJson(data);
           posts.add(post);
         } catch (e) {
@@ -481,21 +476,7 @@ class FirebasePostRepository implements PostRepository {
       
       for (final doc in snapshot.docs) {
         try {
-          final data = doc.data();
-          data['id'] = doc.id;
-          
-          // Convert Firestore Timestamp to DateTime
-          if (data['timestamp'] is Timestamp) {
-            data['timestamp'] = (data['timestamp'] as Timestamp).toDate().toIso8601String();
-          }
-          
-          // Ensure required fields exist with defaults
-          data['likeCount'] = data['likes']?.length ?? 0;
-          data['likedBy'] = List<String>.from(data['likes'] ?? []);
-          data['commentCount'] = data['commentIds']?.length ?? 0;
-          data['commentIds'] = List<String>.from(data['commentIds'] ?? []);
-          data['tags'] = List<String>.from(data['tags'] ?? []);
-          
+          final data = _convertFirestoreDataToPost(doc.data(), doc.id);
           final post = Post.fromJson(data);
           
           // Additional client-side filtering for content search
@@ -544,21 +525,7 @@ class FirebasePostRepository implements PostRepository {
         
         for (final doc in postsSnapshot.docs) {
           try {
-            final data = doc.data();
-            data['id'] = doc.id;
-            
-            // Convert Firestore Timestamp to DateTime
-            if (data['timestamp'] is Timestamp) {
-              data['timestamp'] = (data['timestamp'] as Timestamp).toDate().toIso8601String();
-            }
-            
-            // Ensure required fields exist with defaults
-            data['likeCount'] = data['likes']?.length ?? 0;
-            data['likedBy'] = List<String>.from(data['likes'] ?? []);
-            data['commentCount'] = data['commentIds']?.length ?? 0;
-            data['commentIds'] = List<String>.from(data['commentIds'] ?? []);
-            data['tags'] = List<String>.from(data['tags'] ?? []);
-            
+            final data = _convertFirestoreDataToPost(doc.data(), doc.id);
             final post = Post.fromJson(data);
             posts.add(post);
           } catch (e) {

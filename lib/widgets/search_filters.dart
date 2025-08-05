@@ -288,7 +288,7 @@ class _SearchFiltersState extends State<SearchFilters> {
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                 ),
               );
-            }).toList(),
+            }),
           ],
         ),
       ],

@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class MyPostsScreen extends ConsumerStatefulWidget {
+  const MyPostsScreen({super.key});
+
   @override
   ConsumerState<MyPostsScreen> createState() => _MyPostsScreenState();
 }
@@ -21,9 +23,13 @@ class _MyPostsScreenState extends ConsumerState<MyPostsScreen> {
       // It's now safe to use ref here.
       // Also, check if the posts list inside the state is empty.
       if (ref.read(ownPostProvider).posts.isEmpty) {
-        ref
-            .read(ownPostProvider.notifier)
-            .getOwnPosts(ref.read(authProvider) as String);
+        final authState = ref.read(authProvider);
+        final userId = authState.userId;
+        if (userId != null) {
+          ref
+              .read(ownPostProvider.notifier)
+              .getOwnPosts(userId);
+        }
       }
     });
 
@@ -40,19 +46,34 @@ class _MyPostsScreenState extends ConsumerState<MyPostsScreen> {
   void _onScroll() {
     // 1. Use `ref.read` inside listeners to avoid rebuilding the widget on state change.
     final postState = ref.read(ownPostProvider);
+    final authState = ref.read(authProvider);
+    final userId = authState.userId;
+    
+    if (userId == null) return;
+    
     if (_scrollController.position.pixels >=
             _scrollController.position.maxScrollExtent * 0.9 &&
         !postState.isLoading &&
         postState.hasMore) {
       ref
           .read(ownPostProvider.notifier)
-          .getOwnPosts(ref.read(authProvider) as String);
+          .getOwnPosts(userId);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final userId = ref.watch(authProvider);
+    final authState = ref.watch(authProvider);
+    final userId = authState.userId;
+    
+    if (userId == null) {
+      return const Scaffold(
+        body: Center(
+          child: Text('Please log in to access your posts'),
+        ),
+      );
+    }
+    
     final posts = ref.watch(ownPostProvider.select((state) => state.posts));
     final isLoading = ref.watch(
       ownPostProvider.select((state) => state.isLoading),

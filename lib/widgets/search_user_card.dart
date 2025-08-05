@@ -73,6 +73,7 @@ class SearchUserCard extends ConsumerWidget {
                         context,
                         Icons.grade,
                         'Grade ${user.grade}',
+                        query,
                       ),
                     ],
                   ],

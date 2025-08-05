@@ -169,20 +169,20 @@ class CourseProvider extends StateNotifier<CourseState> {
 
   Set<String> tags = {};
 
-  createCourse(
+  void createCourse(
     BuildContext context, {
     required Map<String, dynamic> user,
     required String userId,
   }) {
-    final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+    final GlobalKey<FormState> formKey = GlobalKey<FormState>();
     String title = '';
     String description = '';
     List<String> tagItems = [];
-    final ImagePicker _picker = ImagePicker();
+    final ImagePicker picker = ImagePicker();
     File? selectedImage;
     bool enableTag = false;
 
-    Set<String> _addTags({required Map<String, dynamic> user}) {
+    Set<String> addTags({required Map<String, dynamic> user}) {
       if (user['roleCode'] == 'instructor' &&
           user['fieldofexpertise'] != 'Not Assigned Yet') {
         tags.add(user['fieldofexpertise']);
@@ -191,10 +191,10 @@ class CourseProvider extends StateNotifier<CourseState> {
       return tags;
     }
 
-    void _submitForm() async {
-      _formKey.currentState!.save();
+    void submitForm() async {
+      formKey.currentState!.save();
       if (title.isEmpty && selectedImage == null && description.isEmpty) {
-        _formKey.currentState!.validate();
+        formKey.currentState!.validate();
         return;
       }
       if (title.isNotEmpty && description.isNotEmpty) {
@@ -203,7 +203,7 @@ class CourseProvider extends StateNotifier<CourseState> {
             .add({
               'title': title,
               'image':
-                  selectedImage?.path ?? null, // Placeholder for image path
+                  selectedImage?.path, // Placeholder for image path
               'description': description,
               'userid': userId,
               'tags': tags.toList(),
@@ -286,7 +286,7 @@ class CourseProvider extends StateNotifier<CourseState> {
                     ),
 
                     Form(
-                      key: _formKey,
+                      key: formKey,
                       child: Column(
                         children: [
                           SizedBox(
@@ -441,10 +441,10 @@ class CourseProvider extends StateNotifier<CourseState> {
                                   children: [
                                     TextButton(
                                       onPressed: () {
-                                        _formKey.currentState!.save();
+                                        formKey.currentState!.save();
                                         tags.clear();
                                         print(tagItems);
-                                        _addTags(user: user);
+                                        addTags(user: user);
                                         setState(() {
                                           // Update the state to reflect the new tags
                                           tags.addAll(tagItems);
@@ -468,7 +468,7 @@ class CourseProvider extends StateNotifier<CourseState> {
                             children: [
                               GestureDetector(
                                 onTap: () async {
-                                  final XFile? image = await _picker.pickImage(
+                                  final XFile? image = await picker.pickImage(
                                     source: ImageSource.gallery,
                                     imageQuality: 80,
                                   );
@@ -496,7 +496,7 @@ class CourseProvider extends StateNotifier<CourseState> {
                                   ),
                                 ),
                                 onTap: () async {
-                                  final XFile? image = await _picker.pickImage(
+                                  final XFile? image = await picker.pickImage(
                                     source: ImageSource.camera,
                                     imageQuality: 80,
                                   );
@@ -577,8 +577,8 @@ class CourseProvider extends StateNotifier<CourseState> {
                                   ),
                                   onPressed: () {
                                     // Handle post creation
-                                    _addTags(user: user);
-                                    _submitForm();
+                                    addTags(user: user);
+                                    submitForm();
                                   },
                                   child: Text('Create Course'),
                                 ),
@@ -606,7 +606,7 @@ final courseProvider = StateNotifierProvider((ref) {
 class CourseItemProvider extends StateNotifier<Map<String, dynamic>?> {
   CourseItemProvider() : super(null);
 
-  getCourseById(String courseId) async {
+  Future<void> getCourseById(String courseId) async {
     Map<String, dynamic>? courseData;
     try {
       final doc = await FirebaseFirestore.instance

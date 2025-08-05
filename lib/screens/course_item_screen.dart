@@ -1,12 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:educonnect/providers/course_provider.dart';
 import 'package:flutter/material.dart';
-import 'dart:io';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class CourseItemScreen extends ConsumerStatefulWidget {
-  CourseItemScreen({super.key, required this.courseId});
+  const CourseItemScreen({super.key, required this.courseId});
   final String courseId;
 
   @override

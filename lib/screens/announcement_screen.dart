@@ -4,11 +4,12 @@ import 'package:educonnect/widgets/announcement.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:educonnect/providers/announce_provider.dart';
-import 'dart:io';
 
 import 'package:flutter_svg/svg.dart';
 
 class AnnouncementScreen extends ConsumerStatefulWidget {
+  const AnnouncementScreen({super.key});
+
   @override
   ConsumerState<AnnouncementScreen> createState() => _AnnouncementScreenState();
 }
@@ -34,7 +35,15 @@ class _AnnouncementScreenState extends ConsumerState<AnnouncementScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final userID = ref.watch(authProvider);
+    final userID = ref.watch(authProvider).userId;
+    
+    if (userID == null) {
+      return const Scaffold(
+        body: Center(
+          child: Text('Please log in to access this screen'),
+        ),
+      );
+    }
     final Map<String, dynamic> userData = {};
     return Scaffold(
       body: SafeArea(

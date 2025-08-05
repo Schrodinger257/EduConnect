@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:educonnect/modules/comment.dart';
-import 'package:educonnect/core/core.dart';
 
 void main() {
   group('Comment', () {

@@ -17,6 +17,8 @@ void main() async {
 }
 
 class MyApp extends ConsumerStatefulWidget {
+  const MyApp({super.key});
+
   @override
   ConsumerState<MyApp> createState() => _MyAppState();
 }

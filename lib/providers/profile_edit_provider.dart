@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import '../core/result.dart';
 import '../core/logger.dart';
 import '../modules/user.dart';
@@ -126,10 +127,10 @@ class ProfileEditProvider extends StateNotifier<ProfileEditState> {
           );
           
           _navigationService.showSuccessSnackBar('Profile updated successfully!');
-          _navigationService.goBack(user);
+          _navigationService.goBack();
         },
         error: (message, exception) {
-          _logger.error('Failed to update profile: $message', exception);
+          _logger.error('Failed to update profile: $message', error: exception);
           state = state.copyWith(
             isLoading: false,
             error: 'Failed to update profile: $message',
@@ -208,7 +209,7 @@ class ProfileEditProvider extends StateNotifier<ProfileEditState> {
           return user.copyWith(profileImage: imageUrl);
         },
         error: (message, exception) {
-          _logger.error('Failed to upload profile image: $message', exception);
+          _logger.error('Failed to upload profile image: $message', error: exception);
           
           state = state.copyWith(
             isLoading: false,
@@ -251,7 +252,7 @@ class ProfileEditProvider extends StateNotifier<ProfileEditState> {
         );
       }
       
-      throw e;
+      rethrow;
     }
   }
 

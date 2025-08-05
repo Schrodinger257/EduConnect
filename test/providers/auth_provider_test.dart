@@ -1,13 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
-import '../../lib/providers/auth_provider.dart';
-import '../../lib/repositories/user_repository.dart';
-import '../../lib/services/navigation_service.dart';
-import '../../lib/core/logger.dart';
-import '../../lib/core/result.dart';
-import '../../lib/modules/user.dart';
+import 'package:educonnect/providers/auth_provider.dart';
+import 'package:educonnect/repositories/user_repository.dart';
+import 'package:educonnect/services/navigation_service.dart';
+import 'package:educonnect/core/logger.dart';
+import 'package:educonnect/core/result.dart';
+import 'package:educonnect/modules/user.dart';
 
 // Generate mocks
 @GenerateMocks([UserRepository, NavigationService, Logger])

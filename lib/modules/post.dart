@@ -29,13 +29,20 @@ class Post {
   /// Creates a Post from JSON data
   factory Post.fromJson(Map<String, dynamic> json) {
     try {
+      final userId = json['userId']?.toString() ?? '';
+      if (userId.trim().isEmpty) {
+        throw FormatException('Post userId cannot be empty');
+      }
+      
       return Post(
-        id: json['id'] as String,
-        content: json['content'] as String,
-        userId: json['userId'] as String,
-        imageUrl: json['imageUrl'] as String?,
+        id: json['id']?.toString() ?? '',
+        content: json['content']?.toString() ?? '',
+        userId: userId.trim(),
+        imageUrl: json['imageUrl']?.toString(),
         tags: List<String>.from(json['tags'] ?? []),
-        timestamp: DateTime.parse(json['timestamp'] as String),
+        timestamp: json['timestamp'] != null 
+            ? DateTime.parse(json['timestamp'].toString()) 
+            : DateTime.now(),
         likeCount: json['likeCount'] as int? ?? 0,
         likedBy: List<String>.from(json['likedBy'] ?? []),
         commentCount: json['commentCount'] as int? ?? 0,
@@ -294,6 +301,6 @@ class Post {
 
   @override
   String toString() {
-    return 'Post(id: $id, userId: $userId, content: ${contentPreview}, likes: $likeCount, comments: $commentCount)';
+    return 'Post(id: $id, userId: $userId, content: $contentPreview, likes: $likeCount, comments: $commentCount)';
   }
 }

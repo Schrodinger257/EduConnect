@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/result.dart';
 import '../core/logger.dart';
-import '../modules/user.dart';
+import '../modules/user.dart' as app_user;
 import 'user_repository.dart';
 
 /// Firebase implementation of UserRepository with Supabase for file storage
@@ -21,7 +21,7 @@ class FirebaseUserRepository implements UserRepository {
        _logger = logger ?? Logger();
 
   @override
-  Future<Result<User>> getUserById(String userId) async {
+  Future<Result<app_user.User>> getUserById(String userId) async {
     try {
       _logger.info('Fetching user with ID: $userId');
       
@@ -47,7 +47,7 @@ class FirebaseUserRepository implements UserRepository {
       data['role'] = data['roleCode'] ?? data['role'];
       data['profileImage'] = data['profileImage'];
       
-      final user = User.fromJson(data);
+      final user = app_user.User.fromJson(data);
       
       _logger.info('Successfully fetched user: $userId');
       return Result.success(user);
@@ -58,7 +58,7 @@ class FirebaseUserRepository implements UserRepository {
   }
 
   @override
-  Future<Result<User>> updateUser(User user) async {
+  Future<Result<app_user.User>> updateUser(app_user.User user) async {
     try {
       _logger.info('Updating user: ${user.id}');
       
@@ -178,7 +178,7 @@ class FirebaseUserRepository implements UserRepository {
   }
 
   @override
-  Future<Result<List<User>>> searchUsers(String query) async {
+  Future<Result<List<app_user.User>>> searchUsers(String query) async {
     try {
       _logger.info('Searching users with query: $query');
       
@@ -200,7 +200,7 @@ class FirebaseUserRepository implements UserRepository {
           .limit(20)
           .get();
       
-      final users = <User>[];
+      final users = <app_user.User>[];
       final seenIds = <String>{};
       
       // Process name search results
@@ -220,7 +220,7 @@ class FirebaseUserRepository implements UserRepository {
             data['enrolledCourses'] = List<String>.from(data['enrolledCourses'] ?? []);
             data['role'] = data['roleCode'] ?? data['role'];
             
-            final user = User.fromJson(data);
+            final user = app_user.User.fromJson(data);
             users.add(user);
             seenIds.add(doc.id);
           } catch (e) {
@@ -246,7 +246,7 @@ class FirebaseUserRepository implements UserRepository {
             data['enrolledCourses'] = List<String>.from(data['enrolledCourses'] ?? []);
             data['role'] = data['roleCode'] ?? data['role'];
             
-            final user = User.fromJson(data);
+            final user = app_user.User.fromJson(data);
             users.add(user);
             seenIds.add(doc.id);
           } catch (e) {
@@ -264,7 +264,7 @@ class FirebaseUserRepository implements UserRepository {
   }
 
   @override
-  Future<Result<List<User>>> getUsersByRole(UserRole role) async {
+  Future<Result<List<app_user.User>>> getUsersByRole(app_user.UserRole role) async {
     try {
       _logger.info('Fetching users with role: ${role.value}');
       
@@ -273,7 +273,7 @@ class FirebaseUserRepository implements UserRepository {
           .where('roleCode', isEqualTo: role.value)
           .get();
       
-      final users = <User>[];
+      final users = <app_user.User>[];
       
       for (final doc in snapshot.docs) {
         try {
@@ -290,7 +290,7 @@ class FirebaseUserRepository implements UserRepository {
           data['enrolledCourses'] = List<String>.from(data['enrolledCourses'] ?? []);
           data['role'] = data['roleCode'] ?? data['role'];
           
-          final user = User.fromJson(data);
+          final user = app_user.User.fromJson(data);
           users.add(user);
         } catch (e) {
           _logger.error('Error parsing user ${doc.id} by role: $e');
@@ -437,7 +437,7 @@ class FirebaseUserRepository implements UserRepository {
   }
 
   @override
-  Future<Result<User>> createUser(User user) async {
+  Future<Result<app_user.User>> createUser(app_user.User user) async {
     try {
       _logger.info('Creating user: ${user.email}');
       
@@ -453,7 +453,7 @@ class FirebaseUserRepository implements UserRepository {
       // Convert DateTime to Firestore Timestamp
       userData['createdAt'] = FieldValue.serverTimestamp();
       
-      final docRef = await _firestore.collection('users').doc(user.id).set(userData);
+      await _firestore.collection('users').doc(user.id).set(userData);
       
       // Return the created user
       final createdUserResult = await getUserById(user.id);
@@ -531,7 +531,7 @@ class FirebaseUserRepository implements UserRepository {
       
       // Get user data for additional stats
       final userDoc = await _firestore.collection('users').doc(userId).get();
-      final userData = userDoc.data() as Map<String, dynamic>? ?? {};
+      final userData = userDoc.data() ?? {};
       
       final statistics = {
         'postsCount': postsSnapshot.docs.length,

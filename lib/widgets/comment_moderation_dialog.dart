@@ -130,7 +130,7 @@ class _CommentModerationDialogState extends State<CommentModerationDialog> {
                 ),
                 contentPadding: EdgeInsets.zero,
               );
-            }).toList(),
+            }),
             
             const SizedBox(height: 16),
             
@@ -218,7 +218,7 @@ class CommentDeleteConfirmationDialog extends StatelessWidget {
             'This action cannot be undone.',
             style: TextStyle(
               fontSize: 12,
-              color: Theme.of(context).errorColor,
+              color: Theme.of(context).colorScheme.error,
               fontStyle: FontStyle.italic,
             ),
           ),

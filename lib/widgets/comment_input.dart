@@ -39,7 +39,8 @@ class _CommentInputState extends ConsumerState<CommentInput> {
       return;
     }
 
-    final currentUserId = ref.read(authProvider) as String?;
+    final authState = ref.read(authProvider);
+    final currentUserId = authState.userId;
     if (currentUserId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('You must be logged in to comment')),

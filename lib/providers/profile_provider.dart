@@ -49,17 +49,17 @@ class ProfileProvider extends StateNotifier<Map<String, dynamic>> {
                     selectedImage = File(image.path);
                     await Supabase.instance.client.storage
                         .from('avatars')
-                        .remove(['${userid}.png']);
+                        .remove(['$userid.png']);
                     await Supabase.instance.client.storage
                         .from('avatars')
                         .upload(
-                          '${userid}.png',
+                          '$userid.png',
                           selectedImage!,
                           fileOptions: FileOptions(upsert: true),
                         );
                     final imageUrl = Supabase.instance.client.storage
                         .from('avatars')
-                        .getPublicUrl('${userid}.png');
+                        .getPublicUrl('$userid.png');
                     final uniqueImageUrl =
                         '$imageUrl?${DateTime.now().millisecondsSinceEpoch}';
                     FirebaseFirestore.instance
@@ -86,17 +86,17 @@ class ProfileProvider extends StateNotifier<Map<String, dynamic>> {
                     selectedImage = File(image.path);
                     await Supabase.instance.client.storage
                         .from('avatars')
-                        .remove(['${userid}.png']);
+                        .remove(['$userid.png']);
                     await Supabase.instance.client.storage
                         .from('avatars')
                         .upload(
-                          '${userid}.png',
+                          '$userid.png',
                           selectedImage!,
                           fileOptions: FileOptions(upsert: true),
                         );
                     final imageUrl = Supabase.instance.client.storage
                         .from('avatars')
-                        .getPublicUrl('${userid}.png');
+                        .getPublicUrl('$userid.png');
                     final uniqueImageUrl =
                         '$imageUrl?${DateTime.now().millisecondsSinceEpoch}';
                     await FirebaseFirestore.instance
@@ -120,7 +120,7 @@ class ProfileProvider extends StateNotifier<Map<String, dynamic>> {
     BuildContext context,
   ) {
     Map<String, dynamic> data = profileData;
-    final _formKey = GlobalKey<FormState>();
+    final formKey = GlobalKey<FormState>();
 
     showModalBottomSheet(
       isScrollControlled: true,
@@ -151,7 +151,7 @@ class ProfileProvider extends StateNotifier<Map<String, dynamic>> {
                   SizedBox(height: 16),
 
                   Form(
-                    key: _formKey,
+                    key: formKey,
                     child: Column(
                       children: [
                         TextFormField(
@@ -352,7 +352,7 @@ class ProfileProvider extends StateNotifier<Map<String, dynamic>> {
                     TextButton(
                       onPressed: () {
                         Navigator.pop(context);
-                        _formKey.currentState?.reset();
+                        formKey.currentState?.reset();
                       },
                       child: Text(
                         'Cancel',

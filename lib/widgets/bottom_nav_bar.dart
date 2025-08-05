@@ -16,18 +16,18 @@ class _GoogleBottomBarState extends ConsumerState<GoogleBottomBar> {
   @override
   Widget build(BuildContext context) {
     // Widget currentScreen = ref.watch(screenProvider);
-    int _selectedIndex = widget.selectedIndex;
-    print(_selectedIndex);
+    int selectedIndex = widget.selectedIndex;
+    print(selectedIndex);
 
     return SalomonBottomBar(
       margin: const EdgeInsets.only(bottom: 20, top: 10),
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      currentIndex: _selectedIndex,
+      currentIndex: selectedIndex,
       selectedItemColor: const Color(0xff6200ee),
       unselectedItemColor: Theme.of(context).shadowColor,
       onTap: (index) {
         setState(() {
-          _selectedIndex = index;
+          selectedIndex = index;
           ref.read(screenProvider.notifier).setScreen(index);
         });
       },

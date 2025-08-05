@@ -153,9 +153,9 @@ class SearchService {
       }
 
       // Perform search based on content type filter
-      final List<Post> posts;
-      final List<Course> courses;
-      final List<User> users;
+      List<Post> posts = [];
+      List<Course> courses = [];
+      List<User> users = [];
 
       switch (filter.contentType) {
         case SearchContentType.all:
@@ -164,9 +164,9 @@ class SearchService {
             _searchCourses(trimmedQuery, filter, limit ~/ 3),
             _searchUsers(trimmedQuery, filter, limit ~/ 3),
           ]);
-          posts = results[0].data ?? [];
-          courses = results[1].data ?? [];
-          users = results[2].data ?? [];
+          posts = (results[0].data as List<Post>?) ?? [];
+          courses = (results[1].data as List<Course>?) ?? [];
+          users = (results[2].data as List<User>?) ?? [];
           break;
         case SearchContentType.posts:
           final result = await _searchPosts(trimmedQuery, filter, limit);
@@ -237,7 +237,7 @@ class SearchService {
       final snapshot = await postsQuery.get();
       final posts = snapshot.docs
           .map((doc) => Post.fromJson({...doc.data(), 'id': doc.id}))
-          .where((post) => _matchesQuery(post, query))
+          .where((post) => _matchesPostQuery(post, query))
           .take(limit)
           .toList();
 
@@ -280,7 +280,7 @@ class SearchService {
       final snapshot = await coursesQuery.get();
       final courses = snapshot.docs
           .map((doc) => Course.fromJson({...doc.data(), 'id': doc.id}))
-          .where((course) => _matchesQuery(course, query))
+          .where((course) => _matchesCourseQuery(course, query))
           .take(limit)
           .toList();
 
@@ -304,7 +304,7 @@ class SearchService {
       final snapshot = await usersQuery.get();
       final users = snapshot.docs
           .map((doc) => User.fromJson({...doc.data(), 'id': doc.id}))
-          .where((user) => _matchesQuery(user, query))
+          .where((user) => _matchesUserQuery(user, query))
           .take(limit)
           .toList();
 
@@ -315,14 +315,14 @@ class SearchService {
   }
 
   /// Checks if a post matches the search query
-  bool _matchesQuery(Post post, String query) {
+  bool _matchesPostQuery(Post post, String query) {
     final lowerQuery = query.toLowerCase();
     return post.content.toLowerCase().contains(lowerQuery) ||
            post.tags.any((tag) => tag.toLowerCase().contains(lowerQuery));
   }
 
   /// Checks if a course matches the search query
-  bool _matchesQuery(Course course, String query) {
+  bool _matchesCourseQuery(Course course, String query) {
     final lowerQuery = query.toLowerCase();
     return course.title.toLowerCase().contains(lowerQuery) ||
            course.description.toLowerCase().contains(lowerQuery) ||
@@ -331,7 +331,7 @@ class SearchService {
   }
 
   /// Checks if a user matches the search query
-  bool _matchesQuery(User user, String query) {
+  bool _matchesUserQuery(User user, String query) {
     final lowerQuery = query.toLowerCase();
     return user.name.toLowerCase().contains(lowerQuery) ||
            user.email.toLowerCase().contains(lowerQuery) ||

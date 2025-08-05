@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 import '../modules/user.dart';
 import '../providers/profile_edit_provider.dart';
 import '../widgets/profile_image_picker.dart';
