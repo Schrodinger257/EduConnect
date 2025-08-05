@@ -46,6 +46,10 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  
+  # Testing
+  mockito: ^5.4.4                  # Mock generation for unit testing
+  build_runner: ^2.4.13            # Code generation tool
 
 
 
