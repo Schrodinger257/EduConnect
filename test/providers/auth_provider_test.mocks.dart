@@ -347,7 +347,7 @@ class MockNavigationService extends _i2.Mock implements _i9.NavigationService {
           as _i4.Future<T?>);
 
   @override
-  _i4.Future<T?> showModalBottomSheet<T>({
+  _i4.Future<T?> showCustomModalBottomSheet<T>({
     required _i1.Widget? child,
     bool? isScrollControlled = false,
     bool? useSafeArea = false,
@@ -355,7 +355,7 @@ class MockNavigationService extends _i2.Mock implements _i9.NavigationService {
     bool? enableDrag = true,
   }) =>
       (super.noSuchMethod(
-            Invocation.method(#showModalBottomSheet, [], {
+            Invocation.method(#showCustomModalBottomSheet, [], {
               #child: child,
               #isScrollControlled: isScrollControlled,
               #useSafeArea: useSafeArea,
@@ -367,12 +367,12 @@ class MockNavigationService extends _i2.Mock implements _i9.NavigationService {
           as _i4.Future<T?>);
 
   @override
-  _i4.Future<T?> showDialog<T>({
+  _i4.Future<T?> showCustomDialog<T>({
     required _i1.Widget? child,
     bool? barrierDismissible = true,
   }) =>
       (super.noSuchMethod(
-            Invocation.method(#showDialog, [], {
+            Invocation.method(#showCustomDialog, [], {
               #child: child,
               #barrierDismissible: barrierDismissible,
             }),
