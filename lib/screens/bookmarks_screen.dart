@@ -62,14 +62,10 @@ class _BookmarksScreenState extends ConsumerState<BookmarksScreen> {
           return ListView.builder(
             itemCount: bookmarkedPosts.length,
             itemBuilder: (ctx, index) {
-              // Ensure your PostWidget can handle the data structure
+              // PostWidget now uses the Post model directly
               return PostWidget(
-                post:
-                    bookmarkedPosts[index], // Assuming 'post' is a map with post data
-                userId:
-                    bookmarkedPosts[index]['userid'], // Assuming 'userId' is in the post map
-                postID:
-                    bookmarkedPosts[index]['id'], // Assuming 'id' is in the post map
+                key: ValueKey(bookmarkedPosts[index].id),
+                post: bookmarkedPosts[index],
               );
             },
           );

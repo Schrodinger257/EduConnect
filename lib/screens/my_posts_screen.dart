@@ -108,10 +108,8 @@ class _MyPostsScreenState extends ConsumerState<MyPostsScreen> {
                   final post = posts[index];
                   // 6. Add a ValueKey for performance.
                   return PostWidget(
-                    key: ValueKey(post['id']),
+                    key: ValueKey(post.id),
                     post: post,
-                    userId: post['userid'],
-                    postID: post['id'],
                     isMyPostScreen: true,
                   );
                 },

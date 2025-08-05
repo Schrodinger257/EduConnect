@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:educonnect/providers/auth_provider.dart';
 import 'package:educonnect/providers/post_provider.dart';
+import 'package:educonnect/modules/post.dart';
+import 'package:educonnect/screens/comments_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_image_viewer/easy_image_viewer.dart';
@@ -13,14 +15,10 @@ class PostWidget extends ConsumerStatefulWidget {
   PostWidget({
     super.key,
     required this.post,
-    required this.userId,
-    required this.postID,
     this.isMyPostScreen = false,
   });
 
-  final Map<String, dynamic> post;
-  final String userId;
-  final String postID;
+  final Post post;
   final bool isMyPostScreen;
 
   @override
@@ -46,25 +44,34 @@ class _PostWidgetState extends ConsumerState<PostWidget> {
     );
   }
 
-  bool isLiked = false;
+  void _toggleLike() async {
+    final currentUserId = ref.read(authProvider) as String?;
+    if (currentUserId == null) return;
+    
+    // Call the provider's toggleLike method
+    await ref.read(postProvider.notifier).toggleLike(currentUserId, widget.post.id);
+  }
 
-  void _toggleLike() {
-    setState(() {
-      isLiked = !isLiked;
-    });
+  void _showComments() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => StreamCommentsScreen(post: widget.post),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final currentUserId = ref.watch(authProvider) as String?;
+    final isLiked = currentUserId != null && widget.post.isLikedBy(currentUserId);
+    
     Color likeColor = Theme.of(context).primaryColor;
     Color bookmarkColor = Theme.of(context).primaryColor;
-    final Map<String, dynamic> userData = {};
-    Map<String, dynamic> mainUser = {};
 
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance
           .collection('users')
-          .doc(widget.userId)
+          .doc(widget.post.userId)
           .snapshots(),
       builder: (ctx, snapShot) {
         return AnimatedSwitcher(
@@ -72,10 +79,9 @@ class _PostWidgetState extends ConsumerState<PostWidget> {
           child: _buildChild(
             ctx: ctx,
             snapShot: snapShot,
-            userData: userData,
-            mainUser: mainUser,
             likeColor: likeColor,
             bookmarkColor: bookmarkColor,
+            isLiked: isLiked,
           ),
         );
       },
@@ -85,10 +91,9 @@ class _PostWidgetState extends ConsumerState<PostWidget> {
   Widget _buildChild({
     required BuildContext ctx,
     required AsyncSnapshot snapShot,
-    required Map<String, dynamic> userData,
-    required Map<String, dynamic> mainUser,
     required Color likeColor,
     required Color bookmarkColor,
+    required bool isLiked,
   }) {
     if (snapShot.hasError) {
       return SvgPicture.asset('assets/vectors/post-Skeleton Loader.svg');
@@ -100,11 +105,10 @@ class _PostWidgetState extends ConsumerState<PostWidget> {
       );
     }
 
-    userData.addAll(snapShot.data!.data() as Map<String, dynamic>);
-    print(mainUser);
+    final userData = snapShot.data!.data() as Map<String, dynamic>;
 
     return Container(
-      key: ValueKey(widget.postID),
+      key: ValueKey(widget.post.id),
       width: double.infinity,
       child: Column(
         children: [
@@ -133,7 +137,6 @@ class _PostWidgetState extends ConsumerState<PostWidget> {
                                         'assets/images/default_avatar.png',
                                       )
                                     : NetworkImage(userData['profileImage']),
-
                                 fit: BoxFit.cover,
                               ),
                             ),
@@ -145,7 +148,7 @@ class _PostWidgetState extends ConsumerState<PostWidget> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  userData['name'],
+                                  userData['name'] ?? 'Unknown User',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: Theme.of(context).shadowColor,
@@ -154,13 +157,7 @@ class _PostWidgetState extends ConsumerState<PostWidget> {
                                 ),
                                 Text(
                                   DateFormat('dd MMMM yyyy HH:mm')
-                                      .format(
-                                        DateTime.fromMillisecondsSinceEpoch(
-                                          widget
-                                              .post['timestamp']
-                                              .millisecondsSinceEpoch,
-                                        ),
-                                      )
+                                      .format(widget.post.timestamp)
                                       .toString(),
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
@@ -187,54 +184,48 @@ class _PostWidgetState extends ConsumerState<PostWidget> {
                                   ),
                               ];
                             },
-                            onSelected: (value) {
+                            onSelected: (value) async {
+                              final currentUserId = ref.read(authProvider) as String?;
+                              if (currentUserId == null) return;
+                              
                               if (value == 'Bookmark') {
-                                // Handle Bookmark post
-                                ref
+                                await ref
                                     .read(postProvider.notifier)
-                                    .toggleBookmark(
-                                      ref.read(authProvider) as String,
-                                      widget.postID,
-                                      context,
-                                    );
+                                    .toggleBookmark(currentUserId, widget.post.id);
                               } else if (value == 'delete') {
-                                // Handle delete post
-                                ref
+                                await ref
                                     .read(postProvider.notifier)
-                                    .deletePost(
-                                      context,
-                                      widget.postID,
-                                      widget.userId,
-                                    );
+                                    .deletePost(widget.post.id, widget.post.userId);
                               }
                             },
                           ),
                         ],
                       ),
-                      Wrap(
-                        direction: Axis.horizontal,
-                        children: (widget.post['tags'] as List)
-                            .map((tag) => _tag(context, tag))
-                            .toList(),
-                      ),
+                      if (widget.post.hasTags)
+                        Wrap(
+                          direction: Axis.horizontal,
+                          children: widget.post.tags
+                              .map((tag) => _tag(context, tag))
+                              .toList(),
+                        ),
                     ],
                   ),
                 ),
                 SizedBox(height: 20),
                 Text(
-                  widget.post['content'],
+                  widget.post.content,
                   style: TextStyle(
                     fontSize: 16,
                     color: Theme.of(context).shadowColor,
                   ),
                 ),
                 SizedBox(height: 5),
-                if (widget.post['image'] != null)
+                if (widget.post.hasImage)
                   GestureDetector(
                     onTap: () {
                       showImageViewer(
                         context,
-                        Image.network(widget.post['image']).image,
+                        Image.network(widget.post.imageUrl!).image,
                         useSafeArea: true,
                         doubleTapZoomable: true,
                         closeButtonColor: Theme.of(context).primaryColor,
@@ -255,7 +246,7 @@ class _PostWidgetState extends ConsumerState<PostWidget> {
                           ),
                         );
                       },
-                      widget.post['image'],
+                      widget.post.imageUrl!,
                       fit: BoxFit.cover,
                     ),
                   ),
@@ -266,37 +257,33 @@ class _PostWidgetState extends ConsumerState<PostWidget> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       TextButton.icon(
-                        onPressed: () {
-                          _toggleLike();
-                        },
+                        onPressed: _toggleLike,
                         label: Text(
-                          'Like',
+                          '${widget.post.likeCount > 0 ? widget.post.likeCount : ''} Like${widget.post.likeCount == 1 ? '' : 's'}',
                           style: TextStyle(
                             color: isLiked
                                 ? likeColor
                                 : Theme.of(context).shadowColor,
+                            fontWeight: isLiked ? FontWeight.bold : FontWeight.normal,
                           ),
                         ),
                         icon: Icon(
-                          Icons.thumb_up,
+                          isLiked ? Icons.thumb_up : Icons.thumb_up_outlined,
                           color: isLiked
                               ? likeColor
                               : Theme.of(context).shadowColor,
                         ),
                       ),
-
                       TextButton.icon(
-                        onPressed: () {
-                          _toggleLike();
-                        },
+                        onPressed: _showComments,
                         label: Text(
-                          'Comments',
+                          '${widget.post.commentCount > 0 ? widget.post.commentCount : ''} Comment${widget.post.commentCount == 1 ? '' : 's'}',
                           style: TextStyle(
                             color: Theme.of(context).shadowColor,
                           ),
                         ),
                         icon: Icon(
-                          Icons.comment,
+                          Icons.comment_outlined,
                           color: Theme.of(context).shadowColor,
                         ),
                       ),

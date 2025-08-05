@@ -244,10 +244,8 @@ class _HomeFeedScreenState extends ConsumerState<HomeFeedScreen> {
                           // This tells Flutter how to identify each PostWidget,
                           // preventing it from rebuilding existing ones when new posts are added.
                           return PostWidget(
-                            key: ValueKey(post['id']),
+                            key: ValueKey(post.id),
                             post: post,
-                            userId: post['userid'],
-                            postID: post['id'],
                           );
                         },
                       ),

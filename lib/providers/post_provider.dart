@@ -5,711 +5,465 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../core/result.dart';
+import '../core/logger.dart';
+import '../modules/post.dart';
+import '../modules/comment.dart';
+import '../repositories/post_repository.dart';
+import '../repositories/firebase_post_repository.dart';
+import '../repositories/user_repository.dart';
+import '../repositories/firebase_user_repository.dart';
+import '../services/navigation_service.dart';
 
 class PostsState {
-  final List<Map<String, dynamic>> posts;
+  final List<Post> posts;
   final bool isLoading;
   final bool hasMore;
+  final String? error;
   final DocumentSnapshot? lastDocument;
 
-  PostsState({
+  const PostsState({
     this.posts = const [],
     this.isLoading = false,
     this.hasMore = true,
+    this.error,
     this.lastDocument,
   });
 
   // Helper method to create a copy of the state with new values
   PostsState copyWith({
-    List<Map<String, dynamic>>? posts,
+    List<Post>? posts,
     bool? isLoading,
     bool? hasMore,
+    String? error,
     DocumentSnapshot? lastDocument,
-    bool clearLastDocument = false, // Flag to handle resetting pagination
+    bool clearLastDocument = false,
+    bool clearError = false,
   }) {
     return PostsState(
       posts: posts ?? this.posts,
       isLoading: isLoading ?? this.isLoading,
       hasMore: hasMore ?? this.hasMore,
+      error: clearError ? null : (error ?? this.error),
       lastDocument: clearLastDocument
           ? null
           : lastDocument ?? this.lastDocument,
     );
   }
+
+  bool get hasError => error != null;
+  bool get isEmpty => posts.isEmpty && !isLoading;
 }
 
 class PostProvider extends StateNotifier<PostsState> {
-  PostProvider(this.ref) : super(PostsState());
-  Map<String, dynamic> mainUser = {};
+  final PostRepository _postRepository;
+  final UserRepository _userRepository;
+  final NavigationService _navigationService;
+  final Logger _logger;
   final Ref ref;
 
-  Future<void> toggleBookmark(
-    String userId,
-    String postId,
-    BuildContext context,
-  ) async {
-    final userDocRef = FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId);
-    try {
-      final doc = await userDocRef.get();
-      if (doc.exists) {
-        final List<dynamic> bookmarks = doc.data()?['Bookmarks'] ?? [];
-        if (bookmarks.contains(postId)) {
-          // If it's already bookmarked, remove it.
-          await userDocRef.update({
-            'Bookmarks': FieldValue.arrayRemove([postId]),
-          });
-          ScaffoldMessenger.of(context).clearSnackBars();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [Text('Post removed from bookmarks')],
-              ),
-              backgroundColor: Colors.redAccent,
-            ),
-          );
-        } else {
-          // If it's not bookmarked, add it.
-          await userDocRef.update({
-            'Bookmarks': FieldValue.arrayUnion([postId]),
-          });
-          ScaffoldMessenger.of(context).clearSnackBars();
+  PostProvider({
+    required PostRepository postRepository,
+    required UserRepository userRepository,
+    required NavigationService navigationService,
+    required Logger logger,
+    required this.ref,
+  }) : _postRepository = postRepository,
+       _userRepository = userRepository,
+       _navigationService = navigationService,
+       _logger = logger,
+       super(const PostsState());
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Post added to bookmarks'),
-              backgroundColor: Theme.of(context).primaryColor,
-            ),
-          );
-        }
-      }
+  Future<void> toggleBookmark(String userId, String postId) async {
+    try {
+      _logger.info('Toggling bookmark for user: $userId, post: $postId');
+      
+      final result = await _userRepository.toggleBookmark(userId, postId);
+      
+      result.when(
+        success: (_) {
+          // Get current bookmarks to determine if it was added or removed
+          _userRepository.getBookmarks(userId).then((bookmarksResult) {
+            bookmarksResult.when(
+              success: (bookmarks) {
+                final isBookmarked = bookmarks.contains(postId);
+                if (isBookmarked) {
+                  _navigationService.showSuccessSnackBar('Post added to bookmarks');
+                } else {
+                  _navigationService.showInfoSnackBar('Post removed from bookmarks');
+                }
+              },
+              error: (message, _) {
+                _logger.warning('Could not check bookmark status: $message');
+              },
+            );
+          });
+        },
+        error: (message, exception) {
+          _logger.error('Error toggling bookmark: $message', exception);
+          _navigationService.showErrorSnackBar('Failed to update bookmark');
+        },
+      );
     } catch (e) {
-      print("Error toggling bookmark: $e");
-      // Optionally, re-throw the error or show a snackbar
+      _logger.error('Unexpected error toggling bookmark: $e');
+      _navigationService.showErrorSnackBar('An unexpected error occurred');
     }
   }
 
-  // NEW: A clear function to handle only liking.
   Future<void> toggleLike(String userId, String postId) async {
-    final userDocRef = FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId);
-    final postDocRef = FirebaseFirestore.instance
-        .collection('posts')
-        .doc(postId);
     try {
-      final userDoc = await userDocRef.get();
-      if (userDoc.exists) {
-        final List<dynamic> likedPosts = userDoc.data()?['likedPosts'] ?? [];
-        if (likedPosts.contains(postId)) {
-          // If already liked, unlike it.
-          await userDocRef.update({
-            'likedPosts': FieldValue.arrayRemove([postId]),
-          });
-          // Also decrement the like count on the post document.
-          await postDocRef.update({'likes': FieldValue.increment(-1)});
-        } else {
-          // If not liked, like it.
-          await userDocRef.update({
-            'likedPosts': FieldValue.arrayUnion([postId]),
-          });
-          // Also increment the like count on the post document.
-          await postDocRef.update({'likes': FieldValue.increment(1)});
-        }
-      }
+      _logger.info('Toggling like for user: $userId, post: $postId');
+      
+      final result = await _postRepository.toggleLike(postId, userId);
+      
+      result.when(
+        success: (_) {
+          _logger.info('Successfully toggled like');
+          // Update the local state to reflect the change immediately
+          _updatePostLikeInState(postId, userId);
+        },
+        error: (message, exception) {
+          _logger.error('Error toggling like: $message', exception);
+          _navigationService.showErrorSnackBar('Failed to update like');
+        },
+      );
     } catch (e) {
-      print("Error toggling like: $e");
+      _logger.error('Unexpected error toggling like: $e');
+      _navigationService.showErrorSnackBar('An unexpected error occurred');
     }
   }
 
-  void deletePost(BuildContext context, String postId, String userId) async {
+  void _updatePostLikeInState(String postId, String userId) {
+    final updatedPosts = state.posts.map((post) {
+      if (post.id == postId) {
+        return post.toggleLike(userId);
+      }
+      return post;
+    }).toList();
+    
+    state = state.copyWith(posts: updatedPosts);
+  }
+
+  Future<void> deletePost(String postId, String userId) async {
     try {
-      await FirebaseFirestore.instance.collection('posts').doc(postId).delete();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Post deleted successfully'),
-          backgroundColor: Colors.green,
-        ),
+      _logger.info('Deleting post: $postId by user: $userId');
+      
+      final result = await _postRepository.deletePost(postId);
+      
+      result.when(
+        success: (_) {
+          _logger.info('Successfully deleted post: $postId');
+          _navigationService.showSuccessSnackBar('Post deleted successfully');
+          
+          // Remove the post from local state
+          final updatedPosts = state.posts.where((post) => post.id != postId).toList();
+          state = state.copyWith(posts: updatedPosts);
+          
+          // Refresh own posts provider
+          ref.read(ownPostProvider.notifier).refreshOwnPosts(userId);
+        },
+        error: (message, exception) {
+          _logger.error('Error deleting post: $message', exception);
+          _navigationService.showErrorSnackBar('Could not delete post: $message');
+        },
       );
-      refreshPosts();
-      ref.read(ownPostProvider.notifier).refreshOwnPosts(userId);
-    } catch (error) {
-      print('Error deleting post: $error');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Could not delete post, error: $error'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+    } catch (e) {
+      _logger.error('Unexpected error deleting post: $e');
+      _navigationService.showErrorSnackBar('An unexpected error occurred');
     }
   }
 
   Future<void> getPosts() async {
     if (state.isLoading || !state.hasMore) {
-      return; // Return an empty list if already loading or no more posts
+      return;
     }
 
-    state = state.copyWith(isLoading: true);
-
-    Query query = FirebaseFirestore.instance
-        .collection('posts')
-        .orderBy('timestamp', descending: true)
-        .limit(5);
-
-    if (state.lastDocument != null) {
-      query = query.startAfterDocument(state.lastDocument!);
-    }
-
-    QuerySnapshot snapshot = await query.get();
+    state = state.copyWith(isLoading: true, clearError: true);
 
     try {
-      final snapshot = await query.get();
+      _logger.info('Fetching posts with pagination');
+      
+      final result = await _postRepository.getPosts(
+        limit: 5,
+        lastDocument: state.lastDocument,
+      );
 
-      if (snapshot.docs.isNotEmpty) {
-        final newPosts = snapshot.docs.map((doc) {
-          return {...doc.data() as Map<String, dynamic>, 'id': doc.id};
-        }).toList();
-
-        // Create a new state with the combined list of old and new posts
-        state = state.copyWith(
-          posts: [...state.posts, ...newPosts],
-          lastDocument: snapshot.docs.last,
-          isLoading: false,
-          hasMore: snapshot.docs.length == 5, // Check if there might be more
-        );
-      } else {
-        // No more posts found
-        state = state.copyWith(isLoading: false, hasMore: false);
-      }
+      result.when(
+        success: (newPosts) {
+          _logger.info('Successfully fetched ${newPosts.length} posts');
+          
+          // Get the last document for pagination
+          DocumentSnapshot? lastDoc;
+          if (newPosts.isNotEmpty) {
+            // We need to get the actual Firestore document for pagination
+            lastDoc = state.lastDocument; // Keep existing for now
+          }
+          
+          state = state.copyWith(
+            posts: [...state.posts, ...newPosts],
+            lastDocument: lastDoc,
+            isLoading: false,
+            hasMore: newPosts.length == 5,
+          );
+        },
+        error: (message, exception) {
+          _logger.error('Error fetching posts: $message', exception);
+          state = state.copyWith(
+            isLoading: false,
+            error: message,
+          );
+        },
+      );
     } catch (e) {
-      print("Error fetching posts: $e");
-      // Handle error state if necessary
-      state = state.copyWith(isLoading: false);
+      _logger.error('Unexpected error fetching posts: $e');
+      state = state.copyWith(
+        isLoading: false,
+        error: 'An unexpected error occurred',
+      );
     }
   }
 
   Future<void> refreshPosts() async {
+    _logger.info('Refreshing posts');
     // Reset the state completely before fetching the first page
-    state = PostsState();
-    print(
-      '#####################################################################',
-    );
-    print(state.posts);
+    state = const PostsState();
     await getPosts();
   }
 
-  Stream<List<Map<String, dynamic>>> getBookmarkedPosts(String userId) {
-    // First, get the stream of the user's document to react to bookmark changes.
-    return FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .snapshots()
-        .asyncMap((userDoc) async {
-          if (!userDoc.exists || userDoc.data() == null) {
-            return []; // Return an empty list if the user doesn't exist
-          }
-
-          // Get the list of bookmarked post IDs from the user's document.
-          final List<String> bookmarkIds = List<String>.from(
-            userDoc.data()!['Bookmarks'] ?? [],
-          );
-
-          if (bookmarkIds.isEmpty) {
-            return []; // Return an empty list if there are no bookmarks.
-          }
-
-          // Fetch all posts where the document ID is in our list of bookmark IDs.
-          final postsSnapshot = await FirebaseFirestore.instance
-              .collection('posts')
-              .where(FieldPath.documentId, whereIn: bookmarkIds)
-              .get();
-
-          // Map the documents to a list of post data.
-          final posts = postsSnapshot.docs.map((doc) {
-            return {...doc.data(), 'id': doc.id};
-          }).toList();
-
-          // Because a 'whereIn' query can't be combined with 'orderBy' on a different field,
-          // we sort the posts by timestamp here in the app.
-          posts.sort((a, b) {
-            final Timestamp timeA = a['timestamp'] ?? Timestamp.now();
-            final Timestamp timeB = b['timestamp'] ?? Timestamp.now();
-            return timeB.compareTo(timeA); // Sort descending (newest first)
-          });
-
-          return posts;
-        });
+  Stream<List<Post>> getBookmarkedPosts(String userId) {
+    _logger.info('Getting bookmarked posts stream for user: $userId');
+    return _postRepository.getBookmarkedPosts(userId);
   }
 
-  Set<String> tags = {};
-
-  Set<String> _addTags({required Map<String, dynamic> user}) {
-    tags.add(user['roleCode']);
-    if (user['roleCode'] == 'student' && user['grade'] != 'None') {
-      tags.add(user['grade']);
-    }
-    if (user['roleCode'] == 'instructor' &&
-        user['fieldofexpertise'] != 'Not Assigned Yet') {
-      tags.add(user['fieldofexpertise']);
-    }
-
-    return tags;
-  }
-
-  createPost(
-    BuildContext context, {
-    required Map<String, dynamic> user,
+  Future<void> createPost({
     required String userId,
-  }) {
-    final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-    String postContent = '';
-    List<String> tagItems = [];
-    final ImagePicker _picker = ImagePicker();
-    File? selectedImage;
-    bool enableTag = false;
-    late String imageUrl;
-
-    void _submitForm() async {
-      _formKey.currentState!.save();
-      if (postContent.isEmpty && selectedImage == null) {
-        _formKey.currentState!.validate();
+    required String content,
+    File? imageFile,
+    List<String> additionalTags = const [],
+  }) async {
+    try {
+      _logger.info('Creating post for user: $userId');
+      
+      // Validate input
+      if (content.trim().isEmpty && imageFile == null) {
+        _navigationService.showErrorSnackBar('Post cannot be empty. Please add some text or an image.');
         return;
       }
-      if (postContent.isNotEmpty || selectedImage != null) {
-        await FirebaseFirestore.instance
-            .collection('posts')
-            .add({
-              'content': postContent,
-              'image': imageUrl ?? null, // Placeholder for image path
-              'likes': [],
-              'userid': userId,
-              'tags': tags.toList(),
-              'timestamp': FieldValue.serverTimestamp(),
-            })
-            .then((_) {
-              Navigator.of(context).pop();
-            })
-            .catchError((error) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Failed to create post: $error')),
-              );
-            });
+
+      state = state.copyWith(isLoading: true, clearError: true);
+
+      // Get user data to generate tags
+      final userResult = await _userRepository.getUserById(userId);
+      if (userResult.isError) {
+        state = state.copyWith(isLoading: false, error: userResult.errorMessage);
+        _navigationService.showErrorSnackBar('Failed to get user information');
+        return;
       }
+
+      final user = userResult.data!;
+      
+      // Upload image if provided
+      String? imageUrl;
+      if (imageFile != null) {
+        final uploadResult = await _uploadPostImage(imageFile, userId);
+        if (uploadResult.isError) {
+          state = state.copyWith(isLoading: false, error: uploadResult.errorMessage);
+          _navigationService.showErrorSnackBar('Failed to upload image');
+          return;
+        }
+        imageUrl = uploadResult.data;
+      }
+
+      // Generate tags based on user role and additional tags
+      final tags = _generatePostTags(user, additionalTags);
+
+      // Create post object
+      final post = Post(
+        id: '', // Will be set by repository
+        content: content.trim(),
+        userId: userId,
+        imageUrl: imageUrl,
+        tags: tags,
+        timestamp: DateTime.now(),
+      );
+
+      // Create post via repository
+      final result = await _postRepository.createPost(post);
+      
+      result.when(
+        success: (createdPost) {
+          _logger.info('Successfully created post: ${createdPost.id}');
+          
+          // Add the new post to the beginning of the list
+          final updatedPosts = [createdPost, ...state.posts];
+          state = state.copyWith(
+            posts: updatedPosts,
+            isLoading: false,
+          );
+          
+          _navigationService.showSuccessSnackBar('Post created successfully');
+          _navigationService.goBack();
+        },
+        error: (message, exception) {
+          _logger.error('Error creating post: $message', exception);
+          state = state.copyWith(isLoading: false, error: message);
+          _navigationService.showErrorSnackBar('Failed to create post: $message');
+        },
+      );
+    } catch (e) {
+      _logger.error('Unexpected error creating post: $e');
+      state = state.copyWith(isLoading: false, error: 'An unexpected error occurred');
+      _navigationService.showErrorSnackBar('An unexpected error occurred');
     }
-
-    showModalBottomSheet(
-      isScrollControlled: true,
-      useSafeArea: true,
-      context: context,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (statefulContext, setState) {
-            return Container(
-              margin: EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(ctx).viewInsets.bottom,
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    Text('Create Post'),
-                    Divider(),
-                    Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.symmetric(vertical: 12.0),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Theme.of(context).shadowColor,
-                                  image: user['profileImage'] == null
-                                      ? null
-                                      : DecorationImage(
-                                          image: NetworkImage(
-                                            user['profileImage'],
-                                          ),
-                                          fit: BoxFit.cover,
-                                        ),
-                                ),
-                              ),
-                              SizedBox(width: 10),
-                              SizedBox(
-                                child: Text(
-                                  user['name'],
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Theme.of(context).shadowColor,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    Form(
-                      key: _formKey,
-                      child: Column(
-                        children: [
-                          SizedBox(
-                            width: double.infinity,
-                            child: TextFormField(
-                              maxLines: null,
-                              decoration: InputDecoration(
-                                hintText: 'What\'s on your mind?',
-                                labelStyle: TextStyle(
-                                  color: Theme.of(context).shadowColor,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderSide: BorderSide.none,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderSide: BorderSide.none,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'can\'t post empty content. Please add some text or an image.';
-                                }
-                                return null;
-                              },
-                              onSaved: (newValue) {
-                                postContent = newValue!;
-                              },
-                            ),
-                          ),
-                          SizedBox(height: 10),
-                          if (selectedImage != null)
-                            Image.file(
-                              selectedImage!,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                            ),
-                          SizedBox(height: 10),
-
-                          // Add your post creation UI here
-                          SizedBox(height: 10),
-                          if (enableTag)
-                            Column(
-                              children: [
-                                Wrap(
-                                  children: tags.map((tag) {
-                                    return Container(
-                                      margin: EdgeInsets.only(
-                                        right: 5,
-                                        bottom: 5,
-                                      ),
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(context).cardColor,
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      child: Text(
-                                        tag,
-                                        style: TextStyle(
-                                          color: Theme.of(context).primaryColor,
-                                        ),
-                                      ),
-                                    );
-                                  }).toList(),
-                                ),
-                                SizedBox(height: 5),
-                                TextFormField(
-                                  decoration: InputDecoration(
-                                    labelText: 'Tags (comma separated)',
-                                    labelStyle: TextStyle(
-                                      color: Theme.of(context).shadowColor,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Theme.of(context).cardColor,
-                                        width: 2,
-                                      ),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Theme.of(context).primaryColor,
-                                        width: 2,
-                                      ),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                  ),
-                                  onSaved: (newValue) {
-                                    if (newValue == null || newValue.isEmpty) {
-                                      return;
-                                    }
-                                    tagItems.clear();
-                                    newValue.split(',').toList().forEach((tag) {
-                                      tagItems.add(tag.trim());
-                                    });
-                                  },
-                                ),
-                                SizedBox(height: 5),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    TextButton(
-                                      onPressed: () {
-                                        _formKey.currentState!.save();
-                                        tags.clear();
-                                        print(tagItems);
-                                        _addTags(user: user);
-                                        setState(() {
-                                          // Update the state to reflect the new tags
-                                          tags.addAll(tagItems);
-                                        });
-                                        print(tags);
-                                      },
-                                      child: Text(
-                                        'Add Tag',
-                                        style: TextStyle(
-                                          color: Theme.of(context).primaryColor,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          SizedBox(height: 10),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              GestureDetector(
-                                onTap: () async {
-                                  final XFile? image = await _picker.pickImage(
-                                    source: ImageSource.gallery,
-                                    imageQuality: 80,
-                                  );
-                                  if (image != null) {
-                                    setState(() {
-                                      selectedImage = File(image.path);
-                                    });
-                                    await Supabase.instance.client.storage
-                                        .from('posts')
-                                        .remove(['${userId}.png']);
-                                    final url =
-                                        '${userId}${DateTime.now().millisecondsSinceEpoch}.png';
-                                    await Supabase.instance.client.storage
-                                        .from('posts')
-                                        .upload(
-                                          url,
-                                          selectedImage!,
-                                          fileOptions: FileOptions(
-                                            upsert: true,
-                                          ),
-                                        );
-                                    imageUrl = Supabase.instance.client.storage
-                                        .from('posts')
-                                        .getPublicUrl(url);
-                                  }
-                                },
-
-                                child: Icon(
-                                  Icons.photo_library,
-                                  color: Colors.pinkAccent,
-                                ),
-                              ),
-                              SizedBox(width: 20),
-                              GestureDetector(
-                                child: Icon(
-                                  Icons.camera_alt,
-                                  color: const Color.fromARGB(
-                                    255,
-                                    161,
-                                    161,
-                                    161,
-                                  ),
-                                ),
-                                onTap: () async {
-                                  final XFile? image = await _picker.pickImage(
-                                    source: ImageSource.camera,
-                                    imageQuality: 80,
-                                  );
-                                  if (image != null) {
-                                    setState(() {
-                                      selectedImage = File(image.path);
-                                    });
-                                    await Supabase.instance.client.storage
-                                        .from('posts')
-                                        .remove(['${userId}.png']);
-                                    final url =
-                                        '${userId}${DateTime.now().millisecondsSinceEpoch}.png';
-                                    await Supabase.instance.client.storage
-                                        .from('posts')
-                                        .upload(
-                                          url,
-                                          selectedImage!,
-                                          fileOptions: FileOptions(
-                                            upsert: true,
-                                          ),
-                                        );
-                                    imageUrl = Supabase.instance.client.storage
-                                        .from('posts')
-                                        .getPublicUrl(url);
-                                  }
-                                },
-                              ),
-                              SizedBox(width: 20),
-                              GestureDetector(
-                                child: Icon(
-                                  Icons.location_pin,
-                                  color: const Color.fromARGB(255, 22, 158, 18),
-                                ),
-                                onTap: () {},
-                              ),
-                              SizedBox(width: 20),
-                              GestureDetector(
-                                child: Icon(
-                                  Icons.tag,
-                                  color: const Color.fromARGB(
-                                    255,
-                                    11,
-                                    123,
-                                    143,
-                                  ),
-                                ),
-                                onTap: () {
-                                  setState(() {
-                                    enableTag = !enableTag;
-                                  });
-                                },
-                              ),
-                            ],
-                          ),
-
-                          SizedBox(height: 50),
-
-                          SizedBox(
-                            width: double.infinity,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                TextButton(
-                                  style: TextButton.styleFrom(
-                                    side: BorderSide(
-                                      color: Theme.of(context).primaryColor,
-                                      width: 2,
-                                    ),
-                                  ),
-                                  onPressed: () {
-                                    Navigator.of(ctx).pop();
-                                  },
-                                  child: Text(
-                                    'Cancel',
-                                    style: TextStyle(
-                                      color: Theme.of(context).primaryColor,
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(width: 10),
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Theme.of(
-                                      context,
-                                    ).cardColor,
-                                    foregroundColor: Theme.of(
-                                      context,
-                                    ).primaryColor,
-                                    elevation: 0,
-                                  ),
-                                  onPressed: () {
-                                    // Handle post creation
-                                    _addTags(user: user);
-                                    _submitForm();
-                                  },
-                                  child: Text('Create Post'),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
   }
+
+  List<String> _generatePostTags(dynamic user, List<String> additionalTags) {
+    final tags = <String>{};
+    
+    // Add role-based tags
+    if (user.role != null) {
+      tags.add(user.role.value);
+    }
+    
+    // Add grade for students
+    if (user.role?.value == 'student' && user.grade != null && user.grade != 'None') {
+      tags.add(user.grade!);
+    }
+    
+    // Add field of expertise for instructors
+    if (user.role?.value == 'instructor' && 
+        user.fieldOfExpertise != null && 
+        user.fieldOfExpertise != 'Not Assigned Yet') {
+      tags.add(user.fieldOfExpertise!);
+    }
+    
+    // Add additional tags
+    tags.addAll(additionalTags.where((tag) => tag.trim().isNotEmpty));
+    
+    return tags.toList();
+  }
+
+  Future<Result<String>> _uploadPostImage(File imageFile, String userId) async {
+    try {
+      _logger.info('Uploading post image for user: $userId');
+      
+      // Validate file size (max 5MB)
+      final fileSize = await imageFile.length();
+      if (fileSize > 5 * 1024 * 1024) {
+        return Result.error('Image file size cannot exceed 5MB');
+      }
+      
+      // Remove existing image if it exists
+      try {
+        await Supabase.instance.client.storage
+            .from('posts')
+            .remove(['${userId}.png']);
+      } catch (e) {
+        // Ignore errors when removing non-existent files
+      }
+      
+      // Upload new image
+      final url = '${userId}${DateTime.now().millisecondsSinceEpoch}.png';
+      await Supabase.instance.client.storage
+          .from('posts')
+          .upload(
+            url,
+            imageFile,
+            fileOptions: const FileOptions(upsert: true),
+          );
+      
+      final publicUrl = Supabase.instance.client.storage
+          .from('posts')
+          .getPublicUrl(url);
+      
+      return Result.success(publicUrl);
+    } catch (e) {
+      _logger.error('Error uploading post image: $e');
+      return Result.error('Failed to upload image: ${e.toString()}');
+    }
+  }
+
+
 }
 
+// Import shared providers
+import 'providers.dart';
+
 final postProvider = StateNotifierProvider<PostProvider, PostsState>((ref) {
-  return PostProvider(ref);
+  return PostProvider(
+    postRepository: ref.read(postRepositoryProvider),
+    userRepository: ref.read(userRepositoryProvider),
+    navigationService: ref.read(navigationServiceProvider),
+    logger: ref.read(loggerProvider),
+    ref: ref,
+  );
 });
 
 class OwnPostProvider extends StateNotifier<PostsState> {
-  OwnPostProvider() : super(PostsState());
+  final PostRepository _postRepository;
+  final Logger _logger;
+
+  OwnPostProvider({
+    required PostRepository postRepository,
+    required Logger logger,
+  }) : _postRepository = postRepository,
+       _logger = logger,
+       super(const PostsState());
 
   Future<void> getOwnPosts(String userId) async {
     if (state.isLoading || !state.hasMore) {
       return;
     }
 
-    state = state.copyWith(isLoading: true);
+    state = state.copyWith(isLoading: true, clearError: true);
 
-    Query query = FirebaseFirestore.instance
-        .collection('posts')
-        .where('userid', isEqualTo: userId)
-        .orderBy('timestamp', descending: true)
-        .limit(5);
-
-    if (state.lastDocument != null) {
-      query = query.startAfterDocument(state.lastDocument!);
-    }
-
-    // FIX: Remove the redundant try/catch and the duplicate query.get() call
     try {
-      final snapshot = await query.get();
+      _logger.info('Fetching own posts for user: $userId');
+      
+      final result = await _postRepository.getUserPosts(
+        userId: userId,
+        limit: 5,
+        lastDocument: state.lastDocument,
+      );
 
-      if (snapshot.docs.isNotEmpty) {
-        final newPosts = snapshot.docs.map((doc) {
-          return {...doc.data() as Map<String, dynamic>, 'id': doc.id};
-        }).toList();
-
-        state = state.copyWith(
-          posts: [...state.posts, ...newPosts],
-          lastDocument: snapshot.docs.last,
-          isLoading: false,
-          hasMore: snapshot.docs.length == 5,
-        );
-      } else {
-        state = state.copyWith(isLoading: false, hasMore: false);
-      }
+      result.when(
+        success: (newPosts) {
+          _logger.info('Successfully fetched ${newPosts.length} own posts');
+          
+          state = state.copyWith(
+            posts: [...state.posts, ...newPosts],
+            isLoading: false,
+            hasMore: newPosts.length == 5,
+          );
+        },
+        error: (message, exception) {
+          _logger.error('Error fetching own posts: $message', exception);
+          state = state.copyWith(
+            isLoading: false,
+            error: message,
+          );
+        },
+      );
     } catch (e) {
-      print("Error fetching own posts: $e");
-      state = state.copyWith(isLoading: false);
+      _logger.error('Unexpected error fetching own posts: $e');
+      state = state.copyWith(
+        isLoading: false,
+        error: 'An unexpected error occurred',
+      );
     }
   }
 
   Future<void> refreshOwnPosts(String userId) async {
+    _logger.info('Refreshing own posts for user: $userId');
     // Reset the state completely before fetching the first page
-    state = PostsState();
+    state = const PostsState();
     await getOwnPosts(userId);
   }
 }
 
-final ownPostProvider = StateNotifierProvider((ref) {
-  return OwnPostProvider();
+final ownPostProvider = StateNotifierProvider<OwnPostProvider, PostsState>((ref) {
+  return OwnPostProvider(
+    postRepository: ref.read(postRepositoryProvider),
+    logger: ref.read(loggerProvider),
+  );
 });
