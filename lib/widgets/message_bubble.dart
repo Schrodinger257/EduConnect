@@ -59,7 +59,9 @@ class MessageBubble extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
         child: Row(
-          mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+          mainAxisAlignment: isMe
+              ? MainAxisAlignment.end
+              : MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             // Avatar for other users (left side)
@@ -69,11 +71,13 @@ class MessageBubble extends StatelessWidget {
             ] else if (!isMe) ...[
               const SizedBox(width: 40), // Space for avatar alignment
             ],
-            
+
             // Message content
             Flexible(
               child: Column(
-                crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                crossAxisAlignment: isMe
+                    ? CrossAxisAlignment.end
+                    : CrossAxisAlignment.start,
                 children: [
                   // Username for first message in sequence (non-me messages)
                   if (!isMe && isFirstInSequence)
@@ -87,7 +91,7 @@ class MessageBubble extends StatelessWidget {
                         ),
                       ),
                     ),
-                  
+
                   // Message bubble
                   Container(
                     constraints: BoxConstraints(
@@ -105,19 +109,24 @@ class MessageBubble extends StatelessWidget {
                         ),
                       ],
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     child: Column(
-                      crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                      crossAxisAlignment: isMe
+                          ? CrossAxisAlignment.end
+                          : CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         // Reply indicator if this is a reply
                         if (message.isReply) _buildReplyIndicator(context),
-                        
+
                         // Message content based on type
                         _buildMessageContent(context),
-                        
+
                         const SizedBox(height: 4),
-                        
+
                         // Timestamp and status row
                         _buildTimestampAndStatus(context),
                       ],
@@ -126,7 +135,7 @@ class MessageBubble extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             // Avatar for current user (right side)
             if (isMe && showAvatar && isFirstInSequence) ...[
               const SizedBox(width: 8),
@@ -145,7 +154,8 @@ class MessageBubble extends StatelessWidget {
     return CircleAvatar(
       radius: 16,
       backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-      backgroundImage: sender.profileImage != null && sender.profileImage!.isNotEmpty
+      backgroundImage:
+          sender.profileImage != null && sender.profileImage!.isNotEmpty
           ? NetworkImage(sender.profileImage!)
           : null,
       child: sender.profileImage == null || sender.profileImage!.isEmpty
@@ -163,16 +173,16 @@ class MessageBubble extends StatelessWidget {
 
   /// Gets the bubble background color based on message type and sender
   Color _getBubbleColor(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    
+    final theme = Theme.of(context);
+
     if (message.isSystemMessage) {
-      return colorScheme.surfaceContainerHighest.withOpacity(0.5);
+      return theme.shadowColor.withOpacity(0.5);
     }
-    
+
     if (isMe) {
-      return colorScheme.primary;
+      return theme.primaryColor;
     } else {
-      return colorScheme.surfaceContainerHighest;
+      return theme.cardColor;
     }
   }
 
@@ -180,7 +190,7 @@ class MessageBubble extends StatelessWidget {
   BorderRadius _getBorderRadius() {
     const radius = Radius.circular(16);
     const smallRadius = Radius.circular(4);
-    
+
     if (isFirstInSequence) {
       return BorderRadius.only(
         topLeft: isMe ? radius : smallRadius,
@@ -224,61 +234,54 @@ class MessageBubble extends StatelessWidget {
 
   /// Builds the message content based on message type
   Widget _buildMessageContent(BuildContext context) {
-    final textColor = isMe 
-        ? Theme.of(context).colorScheme.onPrimary
-        : Theme.of(context).colorScheme.onSurface;
+    final textColor = Theme.of(context).shadowColor;
 
     switch (message.type) {
       case MessageType.text:
         return Text(
           message.content,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: textColor,
-            height: 1.3,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: textColor, height: 1.3),
         );
-      
+
       case MessageType.image:
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (message.fileUrl != null)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  message.fileUrl!,
-                  width: 200,
-                  height: 150,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    width: 200,
-                    height: 150,
-                    color: Colors.grey[300],
-                    child: const Icon(Icons.error),
-                  ),
-                ),
-              ),
+            // if (message.fileUrl != null)
+            //   ClipRRect(
+            //     borderRadius: BorderRadius.circular(8),
+            //     child: Image.network(
+            //       message.fileUrl!,
+            //       width: 200,
+            //       height: 150,
+            //       fit: BoxFit.cover,
+            //       errorBuilder: (context, error, stackTrace) => Container(
+            //         width: 200,
+            //         height: 150,
+            //         color: Colors.grey[300],
+            //         child: const Icon(Icons.error),
+            //       ),
+            //     ),
+            //   ),
             if (message.content.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(
                 message.content,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: textColor,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: textColor),
               ),
             ],
           ],
         );
-      
+
       case MessageType.file:
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.attach_file,
-              size: 20,
-              color: textColor,
-            ),
+            Icon(Icons.attach_file, size: 20, color: textColor),
             const SizedBox(width: 8),
             Flexible(
               child: Column(
@@ -303,12 +306,12 @@ class MessageBubble extends StatelessWidget {
             ),
           ],
         );
-      
+
       case MessageType.system:
         return Text(
           message.content,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+            color: Theme.of(context).shadowColor,
             fontStyle: FontStyle.italic,
           ),
           textAlign: TextAlign.center,
@@ -318,7 +321,7 @@ class MessageBubble extends StatelessWidget {
 
   /// Builds the timestamp and status indicators
   Widget _buildTimestampAndStatus(BuildContext context) {
-    final textColor = isMe 
+    final textColor = isMe
         ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.7)
         : Theme.of(context).colorScheme.onSurface.withOpacity(0.6);
 
@@ -327,12 +330,11 @@ class MessageBubble extends StatelessWidget {
       children: [
         Text(
           DateFormat('HH:mm').format(message.timestamp),
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: textColor,
-            fontSize: 11,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: textColor, fontSize: 11),
         ),
-        
+
         // Status indicators for sent messages
         if (isMe) ...[
           const SizedBox(width: 4),
@@ -354,28 +356,20 @@ class MessageBubble extends StatelessWidget {
             valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
         );
-      
+
       case MessageStatus.sent:
-        return Icon(
-          Icons.check,
-          size: 14,
-          color: color,
-        );
-      
+        return Icon(Icons.check, size: 14, color: color);
+
       case MessageStatus.delivered:
-        return Icon(
-          Icons.done_all,
-          size: 14,
-          color: color,
-        );
-      
+        return Icon(Icons.done_all, size: 14, color: color);
+
       case MessageStatus.read:
         return Icon(
           Icons.done_all,
           size: 14,
           color: Theme.of(context).colorScheme.primary,
         );
-      
+
       case MessageStatus.failed:
         return Icon(
           Icons.error_outline,

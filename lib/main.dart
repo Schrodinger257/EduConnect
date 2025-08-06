@@ -34,7 +34,7 @@ class _MyAppState extends ConsumerState<MyApp> {
         cardColor: const Color.fromARGB(255, 255, 214, 209),
         scaffoldBackgroundColor: const Color.fromARGB(255, 255, 255, 255),
         cardTheme: CardThemeData(
-          color: const Color.fromARGB(255, 255, 214, 209),
+          color: const Color.fromARGB(255, 255, 247, 246),
           shadowColor: const Color.fromARGB(255, 69, 90, 100),
         ),
       ),

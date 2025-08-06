@@ -207,7 +207,7 @@ class AuthState {
 
   const AuthState({
     required this.userId,
-    required this.user,
+    this.user,
     this.isLoading = false,
     this.error = '',
     this.isAuthenticated = false,
@@ -226,7 +226,7 @@ class AuthState {
       userId: clearUser ? null : (userId ?? this.userId),
       user: clearUser ? null : (user ?? this.user),
       isLoading: isLoading ?? this.isLoading,
-      error: clearError ? null : (error ?? this.error),
+      error: clearError ? '' : (error ?? this.error),
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
     );
   }
@@ -415,7 +415,13 @@ class AuthProvider extends StateNotifier<AuthState> {
 
       await FirebaseAuth.instance.signOut();
 
-      state = const AuthState();
+      state = const AuthState(
+        userId: null,
+        user: null,
+        isLoading: false,
+        error: '',
+        isAuthenticated: false,
+      );
 
       _navigationService.showSuccessSnackBar('Logged out successfully!');
       _navigationService.navigateAndReplace(AuthScreen());

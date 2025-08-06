@@ -35,7 +35,8 @@ class FileManagementWidget extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<FileManagementWidget> createState() => _FileManagementWidgetState();
+  ConsumerState<FileManagementWidget> createState() =>
+      _FileManagementWidgetState();
 }
 
 class _FileManagementWidgetState extends ConsumerState<FileManagementWidget> {
@@ -79,6 +80,7 @@ class _FileManagementWidgetState extends ConsumerState<FileManagementWidget> {
 
   Future<void> _uploadFiles() async {
     if (_selectedFiles.isEmpty || _isUploading) return;
+    double _uploadProgress = 0.0;
 
     setState(() {
       _isUploading = true;
@@ -119,7 +121,9 @@ class _FileManagementWidgetState extends ConsumerState<FileManagementWidget> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Successfully uploaded ${result.data!.length} file(s)'),
+              content: Text(
+                'Successfully uploaded ${result.data!.length} file(s)',
+              ),
               backgroundColor: Colors.green,
               behavior: SnackBarBehavior.floating,
             ),
@@ -135,10 +139,7 @@ class _FileManagementWidgetState extends ConsumerState<FileManagementWidget> {
     } catch (e) {
       final errorMessage = 'Upload failed: ${e.toString()}';
       widget.onError?.call(errorMessage);
-      _progressController?.showError(
-        errorMessage,
-        onRetry: _uploadFiles,
-      );
+      _progressController?.showError(errorMessage, onRetry: _uploadFiles);
     } finally {
       setState(() {
         _isUploading = false;
@@ -150,7 +151,7 @@ class _FileManagementWidgetState extends ConsumerState<FileManagementWidget> {
   void _removeUploadedFile(FileInfo fileInfo) async {
     try {
       final result = await _fileService.deleteFile(fileInfo.id);
-      
+
       if (result.isSuccess) {
         setState(() {
           _uploadedFiles.remove(fileInfo);
@@ -202,11 +203,7 @@ class _FileManagementWidgetState extends ConsumerState<FileManagementWidget> {
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.info_outline,
-            size: 16,
-            color: theme.primaryColor,
-          ),
+          Icon(Icons.info_outline, size: 16, color: theme.primaryColor),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -333,13 +330,10 @@ class _FileManagementWidgetState extends ConsumerState<FileManagementWidget> {
         if (_uploadedFiles.isNotEmpty) ...[
           const Divider(),
           const SizedBox(height: 16),
-          
+
           Text(
             'Uploaded Files (${_uploadedFiles.length})',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 12),
 
@@ -358,11 +352,7 @@ class UploadedFilesList extends StatelessWidget {
   final List<FileInfo> files;
   final Function(FileInfo)? onRemoveFile;
 
-  const UploadedFilesList({
-    super.key,
-    required this.files,
-    this.onRemoveFile,
-  });
+  const UploadedFilesList({super.key, required this.files, this.onRemoveFile});
 
   @override
   Widget build(BuildContext context) {
@@ -386,11 +376,7 @@ class UploadedFileTile extends StatelessWidget {
   final FileInfo fileInfo;
   final VoidCallback? onRemove;
 
-  const UploadedFileTile({
-    super.key,
-    required this.fileInfo,
-    this.onRemove,
-  });
+  const UploadedFileTile({super.key, required this.fileInfo, this.onRemove});
 
   IconData get _fileIcon {
     if (fileInfo.isImage) return Icons.image;
@@ -424,18 +410,11 @@ class UploadedFileTile extends StatelessWidget {
             color: _fileIconColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(
-            _fileIcon,
-            color: _fileIconColor,
-            size: 20,
-          ),
+          child: Icon(_fileIcon, color: _fileIconColor, size: 20),
         ),
         title: Text(
           fileInfo.name,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-          ),
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -516,10 +495,7 @@ class UploadedFileTile extends StatelessWidget {
 class FilePreviewDialog extends StatelessWidget {
   final File file;
 
-  const FilePreviewDialog({
-    super.key,
-    required this.file,
-  });
+  const FilePreviewDialog({super.key, required this.file});
 
   @override
   Widget build(BuildContext context) {
@@ -528,10 +504,7 @@ class FilePreviewDialog extends StatelessWidget {
 
     return Dialog(
       child: Container(
-        constraints: const BoxConstraints(
-          maxWidth: 500,
-          maxHeight: 600,
-        ),
+        constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -615,18 +588,12 @@ class FilePreviewDialog extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             'File preview not available',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
-            ),
+            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
           ),
           const SizedBox(height: 8),
           Text(
             'File type: ${mimeType ?? 'Unknown'}',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[500],
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
           ),
         ],
       ),
@@ -637,7 +604,8 @@ class FilePreviewDialog extends StatelessWidget {
     if (mimeType?.startsWith('video/') == true) return Icons.video_file;
     if (mimeType?.startsWith('audio/') == true) return Icons.audio_file;
     if (mimeType == 'application/pdf') return Icons.picture_as_pdf;
-    if (mimeType?.startsWith('application/') == true || mimeType?.startsWith('text/') == true) {
+    if (mimeType?.startsWith('application/') == true ||
+        mimeType?.startsWith('text/') == true) {
       return Icons.description;
     }
     return Icons.insert_drive_file;
@@ -647,7 +615,8 @@ class FilePreviewDialog extends StatelessWidget {
     if (mimeType?.startsWith('video/') == true) return Colors.blue;
     if (mimeType?.startsWith('audio/') == true) return Colors.orange;
     if (mimeType == 'application/pdf') return Colors.red;
-    if (mimeType?.startsWith('application/') == true || mimeType?.startsWith('text/') == true) {
+    if (mimeType?.startsWith('application/') == true ||
+        mimeType?.startsWith('text/') == true) {
       return Colors.indigo;
     }
     return Colors.grey;
