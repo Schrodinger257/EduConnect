@@ -4,16 +4,47 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'utils/supabase_bucket_setup.dart';
+import 'core/logger.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  
+  // Initialize Supabase
   await Supabase.initialize(
     url: 'https://cfqiasiclorneohrejlm.supabase.co',
     anonKey:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNmcWlhc2ljbG9ybmVvaHJlamxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzMTU2NjUsImV4cCI6MjA2OTg5MTY2NX0.s6H2iF7AZoHDrVHsA3UGI4iSR5UEWbqcMMdJA6j3oUs',
   );
+  
+  // Verify Supabase storage buckets
+  await _verifyStorageBuckets();
+  
   runApp(ProviderScope(child: MyApp()));
+}
+
+Future<void> _verifyStorageBuckets() async {
+  try {
+    final logger = Logger();
+    final bucketSetup = SupabaseBucketSetup(logger: logger);
+    
+    logger.info('Verifying Supabase storage buckets...');
+    final result = await bucketSetup.verifyBuckets();
+    
+    if (result.isError) {
+      logger.warning('Bucket verification failed: ${result.errorMessage}');
+      logger.info('Please ensure the following buckets exist in your Supabase dashboard:');
+      logger.info('1. "profiles" bucket (public: true) - for profile images');
+      logger.info('2. "files" bucket (public: true) - for general file uploads');
+    } else {
+      logger.info('All storage buckets verified successfully');
+    }
+  } catch (e) {
+    print('Error during bucket verification: $e');
+  }
 }
 
 class MyApp extends ConsumerStatefulWidget {

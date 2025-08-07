@@ -3,10 +3,22 @@ import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../repositories/user_repository.dart';
+
+import '../core/logger.dart';
+import 'providers.dart';
 
 class ProfileProvider extends StateNotifier<Map<String, dynamic>> {
-  ProfileProvider() : super({});
+  final UserRepository _userRepository;
+  final Logger _logger;
+  
+  ProfileProvider({
+    required UserRepository userRepository,
+    required Logger logger,
+  }) : _userRepository = userRepository,
+       _logger = logger,
+       super({});
+       
   final ImagePicker _picker = ImagePicker();
   File? selectedImage;
   Map<String, dynamic> user = {};
@@ -25,7 +37,7 @@ class ProfileProvider extends StateNotifier<Map<String, dynamic>> {
       userData = snapshot.data() as Map<String, dynamic>;
       state = userData;
     } else {
-      print('User not found');
+      _logger.warning('User not found');
     }
   }
 
@@ -41,36 +53,7 @@ class ProfileProvider extends StateNotifier<Map<String, dynamic>> {
                 title: Text('Choose from Gallery'),
                 onTap: () async {
                   Navigator.pop(context);
-                  final XFile? image = await _picker.pickImage(
-                    source: ImageSource.gallery,
-                    imageQuality: 80,
-                  );
-                  if (image != null) {
-                    selectedImage = File(image.path);
-                    await Supabase.instance.client.storage
-                        .from('avatars')
-                        .remove(['$userid.png']);
-                    await Supabase.instance.client.storage
-                        .from('avatars')
-                        .upload(
-                          '$userid.png',
-                          selectedImage!,
-                          fileOptions: FileOptions(upsert: true),
-                        );
-                    final imageUrl = Supabase.instance.client.storage
-                        .from('avatars')
-                        .getPublicUrl('$userid.png');
-                    final uniqueImageUrl =
-                        '$imageUrl?${DateTime.now().millisecondsSinceEpoch}';
-                    FirebaseFirestore.instance
-                        .collection('users')
-                        .doc(userid)
-                        .update({'profileImage': uniqueImageUrl});
-                    print(
-                      '####################################################################Image updated successfully',
-                    );
-                    state = {...state, 'profileImage': imageUrl};
-                  }
+                  await _handleImageSelection(context, ImageSource.gallery, userid);
                 },
               ),
               ListTile(
@@ -78,33 +61,7 @@ class ProfileProvider extends StateNotifier<Map<String, dynamic>> {
                 title: Text('Take a Photo'),
                 onTap: () async {
                   Navigator.pop(context);
-                  final XFile? image = await _picker.pickImage(
-                    source: ImageSource.camera,
-                    imageQuality: 80,
-                  );
-                  if (image != null) {
-                    selectedImage = File(image.path);
-                    await Supabase.instance.client.storage
-                        .from('avatars')
-                        .remove(['$userid.png']);
-                    await Supabase.instance.client.storage
-                        .from('avatars')
-                        .upload(
-                          '$userid.png',
-                          selectedImage!,
-                          fileOptions: FileOptions(upsert: true),
-                        );
-                    final imageUrl = Supabase.instance.client.storage
-                        .from('avatars')
-                        .getPublicUrl('$userid.png');
-                    final uniqueImageUrl =
-                        '$imageUrl?${DateTime.now().millisecondsSinceEpoch}';
-                    await FirebaseFirestore.instance
-                        .collection('users')
-                        .doc(userid)
-                        .update({'profileImage': imageUrl});
-                    state = {...state, 'profileImage': uniqueImageUrl};
-                  }
+                  await _handleImageSelection(context, ImageSource.camera, userid);
                 },
               ),
             ],
@@ -112,6 +69,105 @@ class ProfileProvider extends StateNotifier<Map<String, dynamic>> {
         );
       },
     );
+  }
+
+  Future<void> _handleImageSelection(BuildContext context, ImageSource source, String userid) async {
+    try {
+      _logger.info('Selecting image from $source for user: $userid');
+      
+      final XFile? image = await _picker.pickImage(
+        source: source,
+        imageQuality: 80,
+        maxWidth: 1024,
+        maxHeight: 1024,
+      );
+      
+      if (image != null) {
+        selectedImage = File(image.path);
+        
+        // Validate file size (max 5MB)
+        final fileSize = await selectedImage!.length();
+        if (fileSize > 5 * 1024 * 1024) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Image file size cannot exceed 5MB'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          return;
+        }
+        
+        // Show loading indicator
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  SizedBox(width: 16),
+                  Text('Uploading profile image...'),
+                ],
+              ),
+              duration: Duration(seconds: 10),
+            ),
+          );
+        }
+        
+        // Upload using repository
+        final result = await _userRepository.uploadProfileImage(selectedImage!, userid);
+        
+        result.when(
+          success: (imageUrl) {
+            _logger.info('Profile image uploaded successfully: $imageUrl');
+            
+            // Add timestamp to force refresh
+            final uniqueImageUrl = '$imageUrl?${DateTime.now().millisecondsSinceEpoch}';
+            state = {...state, 'profileImage': uniqueImageUrl};
+            
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Profile image updated successfully!'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
+          },
+          error: (message, exception) {
+            _logger.error('Failed to upload profile image: $message', error: exception);
+            
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Failed to upload image: $message'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+        );
+      }
+    } catch (e) {
+      _logger.error('Error selecting/uploading image: $e');
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void updateUserProfile(
@@ -337,7 +393,9 @@ class ProfileProvider extends StateNotifier<Map<String, dynamic>> {
                             .update(data)
                             .then((_) {
                               state = data;
-                              Navigator.pop(context);
+                              if (context.mounted) {
+                                Navigator.pop(context);
+                              }
                             });
                       },
                       child: Text(
@@ -380,5 +438,8 @@ class ProfileProvider extends StateNotifier<Map<String, dynamic>> {
 
 final profileProvider =
     StateNotifierProvider<ProfileProvider, Map<String, dynamic>>((ref) {
-      return ProfileProvider();
+      return ProfileProvider(
+        userRepository: ref.read(userRepositoryProvider),
+        logger: ref.read(loggerProvider),
+      );
     });
